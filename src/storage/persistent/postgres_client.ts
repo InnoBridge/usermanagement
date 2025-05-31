@@ -8,9 +8,19 @@ import {
     CREATE_EMAIL_ADDRESSES_TABLE_QUERY,
     CREATE_USERS_USERNAME_INDEX,
     CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
-    CREATE_EMAIL_ADDRESSES_EMAIL_INDEX
+    CREATE_EMAIL_ADDRESSES_EMAIL_INDEX,
+    COUNT_USERS_QUERY,
+    GET_USERS_QUERY,
+    GET_USERS_BY_IDS_QUERY,
+    GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY,
+    GET_LATEST_USER_UPDATE_QUERY,
+    UPSERT_USERS_QUERY,
+    UPSERT_EMAIL_ADDRESSES_QUERY,
+    DELETE_USERS_BY_IDS_QUERY
 } from '@/storage/queries';
 import { PostgresConfiguration } from '@/models/configuration';
+import { User } from '@/models/user';
+import { EmailAddress } from '@/models/email';
 
 class PostgresClient implements DatabaseClient {
     private pool: Pool;
@@ -52,7 +62,7 @@ class PostgresClient implements DatabaseClient {
     async initializeDatabase(): Promise<void> {
         const client = await this.pool.connect();
         try {
-            await client.query('BEGIN');
+            await this.queryWithClient(client, 'BEGIN');
             
             await this.queryWithClient(client, CREATE_VERSION_TABLE_QUERY);
             const versionResult = await this.queryWithClient(client, GET_SCHEMA_VERSION_QUERY);
@@ -68,9 +78,9 @@ class PostgresClient implements DatabaseClient {
             }
             
             console.log(`Database schema is at version ${currentVersion}`);
-            await client.query('COMMIT');
+            await this.queryWithClient(client, 'COMMIT');
         } catch (error) {
-            await client.query('ROLLBACK');
+            await this.queryWithClient(client, 'ROLLBACK');
             console.error('Database initialization failed:', error);
             throw error;
         } finally {
@@ -86,12 +96,223 @@ class PostgresClient implements DatabaseClient {
         await this.queryWithClient(client, CREATE_EMAIL_ADDRESSES_TABLE_QUERY);
     };
 
+    async countUsers(updatedAfter?: number): Promise<number> {
+        const result = await this.query(COUNT_USERS_QUERY, [updatedAfter]);
+        return parseInt(result.rows[0].total, 10);
+    };
+
+    async getUsers(updatedAfter?: number, limit: number = 20, page: number=0): Promise<User[]> {
+        const offset = page * limit;
+        const result = await this.query(GET_USERS_QUERY, [updatedAfter, limit, offset]);
+
+        const users: User[] = [];
+        const userIds: string[] = [];
+        for (const row of result.rows) {
+            const user: User = {
+                id: row.id,
+                username: row.username,
+                firstName: row.first_name,
+                lastName: row.last_name,
+                imageUrl: row.image_url,
+                passwordEnabled: row.password_enabled,
+                twoFactorEnabled: row.two_factor_enabled,
+                backupCodeEnabled: row.backup_code_enabled,
+                createdAt: new Date(row.created_at).getTime(),
+                updatedAt: new Date(row.updated_at).getTime(),
+                emailAddresses: [] // Will be populated separately
+            };
+            users.push(user);
+            userIds.push(user.id);
+        }
+        if (userIds.length === 0) {
+            return users; // No users found
+        }
+
+        // Fetch email addresses for the users
+        const emailAddresses = await this.getEmailAddressesByUserIds(userIds);
+        const userIdToEmails: Map<string, EmailAddress[]> = new Map();
+        for (const email of emailAddresses) {
+            if (!userIdToEmails.has(email.userId!)) {
+                userIdToEmails.set(email.userId!, []);
+            }
+            userIdToEmails.get(email.userId!)!.push(email);
+        }
+        
+        for (const user of users) {
+            user.emailAddresses = userIdToEmails.get(user.id) || [];
+        }
+        return users;
+    }
+
+    async getUserById(userId: string): Promise<User | null> {
+        return (await this.getUsersByIds([userId])).length > 0 ? (await this.getUsersByIds([userId]))[0] : null; 
+    };
+
+    async getUsersByIds(userIds: string[]): Promise<User[]> {
+        if (userIds.length === 0) {
+            return [];
+        }
+        const result = await this.query(GET_USERS_BY_IDS_QUERY, [userIds]);
+        const users: User[] = [];
+        for (const row of result.rows) {
+            const user: User = {
+                id: row.id,
+                username: row.username,
+                firstName: row.first_name,
+                lastName: row.last_name,
+                imageUrl: row.image_url,
+                passwordEnabled: row.password_enabled,
+                twoFactorEnabled: row.two_factor_enabled,
+                backupCodeEnabled: row.backup_code_enabled,
+                createdAt: new Date(row.created_at).getTime(),
+                updatedAt: new Date(row.updated_at).getTime(),
+                emailAddresses: [] // Will be populated separately
+            };
+            users.push(user);
+        }
+
+        if (users.length === 0) {
+            return users; // No users found
+        }
+
+        // Fetch email addresses for the users
+        const emailAddresses = await this.getEmailAddressesByUserIds(userIds);
+        const userIdToEmails: Map<string, EmailAddress[]> = new Map();
+        for (const email of emailAddresses) {
+            if (!userIdToEmails.has(email.userId!)) {
+                userIdToEmails.set(email.userId!, []);
+            }
+            userIdToEmails.get(email.userId!)!.push(email);
+        }
+        
+        for (const user of users) {
+            user.emailAddresses = userIdToEmails.get(user.id) || [];
+        }
+        return users;
+    }
+
+    async getEmailAddressesByUserIds(userIds: string[]): Promise<EmailAddress[]> {
+        if (userIds.length === 0) {
+            return [];
+        }
+        const result = await this.query(GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY, [userIds]);
+        const emailAddresses: EmailAddress[] = [];
+        for (const row of result.rows) {
+            emailAddresses.push({
+                id: row.id,
+                userId: row.user_id,
+                emailAddress: row.email_address
+            });
+        }
+        return emailAddresses;
+    }
+
+    async getLatestUserUpdate(): Promise<Date> {
+        const result = await this.query(GET_LATEST_USER_UPDATE_QUERY);
+        if ( result.rows.length > 0 ) {
+            if (result.rows[0].latest_update) {
+                return new Date(result.rows[0].latest_update); // Return the latest update date
+            } else {
+                return new Date(0); // Return epoch if no updates found
+            }
+        } else { 
+            return new Date(0);
+        }
+    }
+
+    async upsertUsers(users: User[]): Promise<void> {
+        if (users.length === 0) {
+            return;
+        }
+
+        const client = await this.pool.connect();
+        try {
+            await this.queryWithClient(client, 'BEGIN');
+            
+            // Prepare user data arrays
+            const userIds: string[] = [];
+            const usernames: (string | null)[] = [];
+            const firstNames: (string | null)[] = [];
+            const lastNames: (string | null)[] = [];
+            const imageUrls: string[] = [];
+            const passwordEnabled: boolean[] = [];
+            const twoFactorEnabled: boolean[] = [];
+            const backupCodeEnabled: boolean[] = [];
+            const createdAts: number[] = [];
+            const updatedAts: number[] = [];
+
+            // Prepare email data arrays
+            const emailIds: string[] = [];
+            const emailUserIds: string[] = [];
+            const emailAddresses: string[] = [];
+
+            for (const user of users) {
+                userIds.push(user.id);
+                usernames.push(user.username);
+                firstNames.push(user.firstName);
+                lastNames.push(user.lastName);
+                imageUrls.push(user.imageUrl);
+                passwordEnabled.push(user.passwordEnabled);
+                twoFactorEnabled.push(user.twoFactorEnabled);
+                backupCodeEnabled.push(user.backupCodeEnabled);
+                createdAts.push(user.createdAt);
+                updatedAts.push(user.updatedAt);
+
+                for (const email of user.emailAddresses) {
+                    emailIds.push(email.id);
+                    emailUserIds.push(user.id);
+                    emailAddresses.push(email.emailAddress);
+                }
+            }
+
+            if (userIds.length > 0) {
+                await this.queryWithClient(client, UPSERT_USERS_QUERY, [
+                    userIds,
+                    usernames,
+                    firstNames,
+                    lastNames,
+                    imageUrls,
+                    passwordEnabled,
+                    twoFactorEnabled,
+                    backupCodeEnabled,
+                    createdAts,
+                    updatedAts
+                ]);
+            }
+
+            if (emailIds.length > 0) {
+                await this.queryWithClient(client, UPSERT_EMAIL_ADDRESSES_QUERY, [
+                    emailIds,
+                    emailUserIds,
+                    emailAddresses
+                ]);
+            }
+
+            await this.queryWithClient(client, 'COMMIT');
+        } catch (error) {
+            await this.queryWithClient(client,'ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    async deleteUserById(userId: string): Promise<void >{
+        await this.deleteUsersByIds([userId]);
+    };
+
+    async deleteUsersByIds (userIds: string[]): Promise<void> {
+        if (userIds.length === 0) {
+            return; // No users to delete
+        }
+        await this.query(DELETE_USERS_BY_IDS_QUERY, [userIds]);
+    };
+
     async shutdown() {
         await this.pool.end();
     }
 }
 
 export {
-    PostgresClient,
-    PostgresConfiguration
+    PostgresClient
 };
