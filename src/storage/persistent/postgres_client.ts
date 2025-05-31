@@ -145,7 +145,8 @@ class PostgresClient implements DatabaseClient {
     }
 
     async getUserById(userId: string): Promise<User | null> {
-        return (await this.getUsersByIds([userId])).length > 0 ? (await this.getUsersByIds([userId]))[0] : null; 
+        const users = await this.getUsersByIds([userId]);
+        return users.length > 0 ? users[0] : null; 
     };
 
     async getUsersByIds(userIds: string[]): Promise<User[]> {

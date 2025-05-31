@@ -37,7 +37,7 @@ const getUserList = async (limit: number, offset: number, updatedAfter?: number)
             break;
         }
         const emailAddresses: EmailAddress[] = [];
-        if (emailAddresses !== null && userData.emailAddresses.length > 0) {
+        if (userData.emailAddresses.length > 0) {
             for (const email of userData.emailAddresses) {
                 emailAddresses.push({
                     id: email.id,

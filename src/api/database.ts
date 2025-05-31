@@ -111,7 +111,7 @@ const deleteUserById = async (userId: string): Promise<void> => {
     if (!isDatabaseClientSet()) {
         throw new Error("Database client not initialized. Call initializeDatabase first.");
     }
-    return await deleteUserById(userId);
+    return await databaseClient?.deleteUserById(userId);
 };
 
 const deleteUsersByIds = async (userIds: string[]): Promise<void> => {
