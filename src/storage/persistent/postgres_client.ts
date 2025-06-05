@@ -16,7 +16,13 @@ import {
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
     UPSERT_EMAIL_ADDRESSES_QUERY,
-    DELETE_USERS_BY_IDS_QUERY
+    DELETE_USERS_BY_IDS_QUERY,
+    CREATE_CONNECTION_REQUESTS_TABLE_QUERY,
+    CREATE_CONNECTIONS_TABLE_QUERY,
+    CREATE_CONNECTION_REQUESTS_PAIR_INDEX_QUERY,
+    ADD_NO_SELF_REQUESTS_CHECK_QUERY,
+    ADD_USER_ORDER_CHECK_QUERY,
+    CREATE_UNIQUE_CONNECTIONS_PAIR_INDEX_QUERY
 } from '@/storage/queries';
 import { PostgresConfiguration } from '@/models/configuration';
 import { User } from '@/models/user';
@@ -38,6 +44,16 @@ class PostgresClient implements DatabaseClient {
             await this.queryWithClient(client, CREATE_EMAIL_ADDRESSES_USER_ID_INDEX);
             await this.queryWithClient(client, CREATE_EMAIL_ADDRESSES_EMAIL_INDEX);
         });
+
+        // Register migration for connections table
+        this.registerMigration(1, async (client) => {
+            await this.createConnectionsTable(client);
+            await this.createConnectionRequestTable(client);
+            await this.queryWithClient(client, CREATE_CONNECTION_REQUESTS_PAIR_INDEX_QUERY);
+            await this.queryWithClient(client, ADD_NO_SELF_REQUESTS_CHECK_QUERY);
+            await this.queryWithClient(client, ADD_USER_ORDER_CHECK_QUERY);
+            await this.queryWithClient(client, CREATE_UNIQUE_CONNECTIONS_PAIR_INDEX_QUERY);
+        });
     }
 
     async query(text: string, params?: any[]): Promise<QueryResult> {
@@ -57,6 +73,7 @@ class PostgresClient implements DatabaseClient {
     registerMigration(fromVersion: number, migrationFn: (client: PoolClient) => Promise<void>): void {
         this.migrations.set(fromVersion, migrationFn);
     }
+
 
     // Update initializeDatabase to use registered migrations
     async initializeDatabase(): Promise<void> {
@@ -87,6 +104,9 @@ class PostgresClient implements DatabaseClient {
             client.release();
         }
     }
+
+
+    //----------------------------Users and Email Addresses----------------------------
 
     async createUsersTable(client: PoolClient): Promise<void> {
         await this.queryWithClient(client, CREATE_USERS_TABLE_QUERY);    
@@ -190,7 +210,7 @@ class PostgresClient implements DatabaseClient {
             user.emailAddresses = userIdToEmails.get(user.id) || [];
         }
         return users;
-    }
+    };
 
     async getEmailAddressesByUserIds(userIds: string[]): Promise<EmailAddress[]> {
         if (userIds.length === 0) {
@@ -206,7 +226,7 @@ class PostgresClient implements DatabaseClient {
             });
         }
         return emailAddresses;
-    }
+    };
 
     async getLatestUserUpdate(): Promise<Date> {
         const result = await this.query(GET_LATEST_USER_UPDATE_QUERY);
@@ -296,7 +316,7 @@ class PostgresClient implements DatabaseClient {
         } finally {
             client.release();
         }
-    }
+    };
 
     async deleteUserById(userId: string): Promise<void >{
         await this.deleteUsersByIds([userId]);
@@ -309,9 +329,19 @@ class PostgresClient implements DatabaseClient {
         await this.query(DELETE_USERS_BY_IDS_QUERY, [userIds]);
     };
 
+    //----------------------------Connections and Connection Requests----------------------------
+    
+    async createConnectionsTable(client: PoolClient): Promise<void> {
+        await this.queryWithClient(client, CREATE_CONNECTIONS_TABLE_QUERY);
+    };
+
+    async createConnectionRequestTable(client: PoolClient): Promise<void> {
+      await this.queryWithClient(client, CREATE_CONNECTION_REQUESTS_TABLE_QUERY);    
+    };
+
     async shutdown() {
         await this.pool.end();
-    }
+    };
 }
 
 export {

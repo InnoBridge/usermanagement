@@ -1,3 +1,5 @@
+import { C } from "vitest/dist/chunks/reporters.d.C-cu31ET.js";
+
 const CREATE_VERSION_TABLE_QUERY = 
     `CREATE TABLE IF NOT EXISTS user_schema_versions (
         version INTEGER PRIMARY KEY,
@@ -125,6 +127,53 @@ const UPSERT_EMAIL_ADDRESSES_QUERY =
 const DELETE_USERS_BY_IDS_QUERY = 
     `DELETE FROM users WHERE id = ANY($1)`;
 
+const CREATE_CONNECTION_REQUESTS_TABLE_QUERY =
+    `CREATE TABLE connection_requests (
+        request_id     SERIAL PRIMARY KEY,
+        requester_id   TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id    TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        greeting_text  TEXT    NULL,                                                
+        status         VARCHAR(10) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending','accepted','rejected','canceled')),                                                                               -- state of the request
+        created_at     TIMESTAMPTZ WITH TIME ZONE NOT NULL DEFAULT NOW(),
+        responded_at   TIMESTAMPTZ WITH TIME ZONE
+    )`;
+
+//-- Prevent multiple simultaneous pending requests between the same pair
+const CREATE_CONNECTION_REQUESTS_PAIR_INDEX_QUERY =
+    `CREATE UNIQUE INDEX uq_connection_requests_pair
+        ON connection_requests (
+            LEAST(requester_id, receiver_id),
+            GREATEST(requester_id, receiver_id)
+        )
+    WHERE status = 'pending'`;
+
+// -- Disallow sending a request to oneself
+const ADD_NO_SELF_REQUESTS_CHECK_QUERY =
+    `ALTER TABLE connection_requests
+    ADD CONSTRAINT chk_no_self_request
+    CHECK (requester_id <> receiver_id);`;
+
+const CREATE_CONNECTIONS_TABLE_QUERY = 
+    `CREATE TABLE connections (
+        connection_id  SERIAL PRIMARY KEY,                                         -- unique ID for each connection
+        user_id1       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- smaller user ID in the pair
+        user_id2       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- larger user ID in the pair
+        connected_at   TIMESTAMPTZ WITH TIME ZONE NOT NULL DEFAULT NOW()              -- when the connection was established
+    )`;
+
+// -- Enforce user_id1 < user_id2 so each mutual pair is stored only once
+const ADD_USER_ORDER_CHECK_QUERY =
+    `ALTER TABLE connections
+        ADD CONSTRAINT chk_user_order
+        CHECK (user_id1 < user_id2)`;
+
+//-- Each distinct unordered pair appears exactly once
+const CREATE_UNIQUE_CONNECTIONS_PAIR_INDEX_QUERY =
+    `CREATE UNIQUE INDEX uq_connections_pair
+        ON connections (user_id1, user_id2)`;
+
+
 export {
     CREATE_VERSION_TABLE_QUERY,
     GET_SCHEMA_VERSION_QUERY,
@@ -141,5 +190,11 @@ export {
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
     UPSERT_EMAIL_ADDRESSES_QUERY,
-    DELETE_USERS_BY_IDS_QUERY
+    DELETE_USERS_BY_IDS_QUERY,
+    CREATE_CONNECTION_REQUESTS_TABLE_QUERY,
+    CREATE_CONNECTIONS_TABLE_QUERY,
+    CREATE_CONNECTION_REQUESTS_PAIR_INDEX_QUERY,
+    ADD_NO_SELF_REQUESTS_CHECK_QUERY,
+    ADD_USER_ORDER_CHECK_QUERY,
+    CREATE_UNIQUE_CONNECTIONS_PAIR_INDEX_QUERY
 };
