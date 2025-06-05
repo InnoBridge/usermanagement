@@ -1,12 +1,8 @@
-import { PoolClient, QueryResult } from 'pg';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
+import { BaseDatabaseClient } from '@/storage/persistent/base_database_client';
 
-interface DatabaseClient {
-    queryWithClient(client: PoolClient, text: string, params?: any[]): Promise<QueryResult>;
-    query(query: string, params?: any[]): Promise<any>;
-    registerMigration(fromVersion: number, migrationFn: (client: PoolClient) => Promise<void>): void
-    initializeDatabase(): Promise<void>;
+interface UserDatabaseClient extends BaseDatabaseClient {
     countUsers(updatedAfter?: number): Promise<number>;
     getUsers(updatedAfter?: number, limit?: number, page?: number): Promise<User[]>;
     getUserById(userId: string): Promise<User | null>;
@@ -16,9 +12,8 @@ interface DatabaseClient {
     upsertUsers(user: User[]): Promise<void>;
     deleteUserById(userId: string): Promise<void>;
     deleteUsersByIds (userIds: string[]): Promise<void>;
-    shutdown(): Promise<void>;
 };
 
 export {
-    DatabaseClient,
+    UserDatabaseClient,
 };

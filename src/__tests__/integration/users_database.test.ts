@@ -1,31 +1,31 @@
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { PostgresConfiguration } from '@/models/configuration';
-import { DatabaseClient } from '@/storage/persistent/database_client';
-import { PostgresClient } from '@/storage/persistent/postgres_client';
+import { UserDatabaseClient } from '@/storage/persistent/user_database_client';
+import { UserPostgresClient } from '@/storage/persistent/user_postgres_client';
 import { User } from '@/models/user';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const DATABASE_URL = process.env.DATABASE_URL;
 
-const initializeDatabaseClient = (): DatabaseClient => {
+const initializeDatabaseClient = (): UserDatabaseClient => {
     if (!DATABASE_URL) {
         throw new Error('DATABASE_URL is not set in the environment variables');
     }
     const config = {
         connectionString: DATABASE_URL
     } as PostgresConfiguration;
-    return new PostgresClient(config);
+    return new UserPostgresClient(config);
 }
 
-const getLatestDateTest = async (client: DatabaseClient) => {
+const getLatestDateTest = async (client: UserDatabaseClient) => {
     console.log('Starting tests...');
     const latestDate = await client.getLatestUserUpdate();
     console.log(`Latest user update date: ${latestDate}`);
     console.log(`Epoch time: ${latestDate.getTime()}`);
 };
 
-const upsertUsersTest = async (client: DatabaseClient) => {
+const upsertUsersTest = async (client: UserDatabaseClient) => {
     console.log('Starting upsert user test...');
     const users = [
         {
@@ -110,14 +110,14 @@ const upsertUsersTest = async (client: DatabaseClient) => {
     console.log('Users upserted successfully');
 };
 
-const countUsersTest = async (client: DatabaseClient) => {
+const countUsersTest = async (client: UserDatabaseClient) => {
     console.log('Starting user count test...');
     const numberOfUsers = await client.countUsers(1748650000000);
     console.log(`Count of Users : ${numberOfUsers}`);
     console.log('countUsersTest completed successfully');
 }
 
-const getEmailAddressesByUserIdsTest = async (client: DatabaseClient) => {
+const getEmailAddressesByUserIdsTest = async (client: UserDatabaseClient) => {
     console.log('Starting getEmailAddressesByUserIds test...');
     const userIds = ['user_1', 'user_2', 'user_3', 'user_4', 'user_5'];
     const emailAddresses = await client.getEmailAddressesByUserIds(userIds);
@@ -125,7 +125,7 @@ const getEmailAddressesByUserIdsTest = async (client: DatabaseClient) => {
     console.log('getEmailAddressesByUserIdsTest completed successfully');
 }
 
-const getUsersTest = async (client: DatabaseClient) => {
+const getUsersTest = async (client: UserDatabaseClient) => {
     console.log('Starting getUsers test...');
     const users = await client.getUsers();
     console.log(`Total Users: ${users.length}`);
@@ -133,7 +133,7 @@ const getUsersTest = async (client: DatabaseClient) => {
     console.log('getUsersTest completed successfully');
 }
 
-const deleteUserByIdTest = async (client: DatabaseClient) => {
+const deleteUserByIdTest = async (client: UserDatabaseClient) => {
     console.log('Starting deleteUserById test...');
     const userId = 'user_1';
     const usersBeforeDelete = await client.getUsers();
@@ -150,7 +150,7 @@ const deleteUserByIdTest = async (client: DatabaseClient) => {
     console.log(`User with ID ${userId} deleted successfully`);
 };
 
-const deleteUsersByIdsTest = async (client: DatabaseClient) => {
+const deleteUsersByIdsTest = async (client: UserDatabaseClient) => {
     console.log('Starting deleteUsersByIds test...');
     const userIds = ['user_2', 'user_3', 'user_4', 'user_5'];
     const usersBeforeDelete = await client.getUsers();

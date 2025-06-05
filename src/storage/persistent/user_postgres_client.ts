@@ -1,14 +1,7 @@
-import { Pool, PoolClient, QueryResult } from 'pg';
-import { DatabaseClient } from '@/storage/persistent/database_client';
+import { PoolClient } from 'pg';
 import {
-    CREATE_VERSION_TABLE_QUERY,
-    GET_SCHEMA_VERSION_QUERY,
-    UPDATE_SCHEMA_VERSION_QUERY,
     CREATE_USERS_TABLE_QUERY,
     CREATE_EMAIL_ADDRESSES_TABLE_QUERY,
-    CREATE_USERS_USERNAME_INDEX,
-    CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
-    CREATE_EMAIL_ADDRESSES_EMAIL_INDEX,
     COUNT_USERS_QUERY,
     GET_USERS_QUERY,
     GET_USERS_BY_IDS_QUERY,
@@ -16,19 +9,21 @@ import {
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
     UPSERT_EMAIL_ADDRESSES_QUERY,
-    DELETE_USERS_BY_IDS_QUERY
+    DELETE_USERS_BY_IDS_QUERY,
+    CREATE_USERS_USERNAME_INDEX,
+    CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
+    CREATE_EMAIL_ADDRESSES_EMAIL_INDEX
 } from '@/storage/queries';
-import { PostgresConfiguration } from '@/models/configuration';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
+import { BasePostgresClient } from '@/storage/persistent/base_postgres_client';
+import { UserDatabaseClient } from '@/storage/persistent/user_database_client';
+import { PostgresConfiguration } from '@/models/configuration';
 
-class PostgresClient implements DatabaseClient {
-    private pool: Pool;
-    // Add to PostgresClient class
-    private migrations: Map<number, (client: PoolClient) => Promise<void>> = new Map();
+class UserPostgresClient extends BasePostgresClient implements UserDatabaseClient {
 
     constructor(config: PostgresConfiguration) {
-        this.pool = new Pool(config);
+        super(config);
 
         // Register default migrations
         this.registerMigration(0, async (client) => {
@@ -38,54 +33,6 @@ class PostgresClient implements DatabaseClient {
             await this.queryWithClient(client, CREATE_EMAIL_ADDRESSES_USER_ID_INDEX);
             await this.queryWithClient(client, CREATE_EMAIL_ADDRESSES_EMAIL_INDEX);
         });
-    }
-
-    async query(text: string, params?: any[]): Promise<QueryResult> {
-        const client = await this.pool.connect();
-        try {
-            return await client.query(text, params);
-        } finally {
-            client.release();
-        }
-    }
-
-    async queryWithClient(client: PoolClient, text: string, params?: any[]): Promise<QueryResult>  {
-        return await client.query(text, params);
-    }
-
-    // Public method to register migrations
-    registerMigration(fromVersion: number, migrationFn: (client: PoolClient) => Promise<void>): void {
-        this.migrations.set(fromVersion, migrationFn);
-    }
-
-    // Update initializeDatabase to use registered migrations
-    async initializeDatabase(): Promise<void> {
-        const client = await this.pool.connect();
-        try {
-            await this.queryWithClient(client, 'BEGIN');
-            
-            await this.queryWithClient(client, CREATE_VERSION_TABLE_QUERY);
-            const versionResult = await this.queryWithClient(client, GET_SCHEMA_VERSION_QUERY);
-            let currentVersion = versionResult.rows[0].version;
-            
-            // Apply migrations in order
-            while (this.migrations.has(currentVersion)) {
-                console.log(`Upgrading from version ${currentVersion} to ${currentVersion + 1}`);
-                const migration = await this.migrations.get(currentVersion);
-                await migration!(client);
-                currentVersion++;
-                await this.queryWithClient(client, UPDATE_SCHEMA_VERSION_QUERY, [currentVersion]);
-            }
-            
-            console.log(`Database schema is at version ${currentVersion}`);
-            await this.queryWithClient(client, 'COMMIT');
-        } catch (error) {
-            await this.queryWithClient(client, 'ROLLBACK');
-            console.error('Database initialization failed:', error);
-            throw error;
-        } finally {
-            client.release();
-        }
     }
 
     async createUsersTable(client: PoolClient): Promise<void> {
@@ -190,7 +137,7 @@ class PostgresClient implements DatabaseClient {
             user.emailAddresses = userIdToEmails.get(user.id) || [];
         }
         return users;
-    }
+    };
 
     async getEmailAddressesByUserIds(userIds: string[]): Promise<EmailAddress[]> {
         if (userIds.length === 0) {
@@ -206,7 +153,7 @@ class PostgresClient implements DatabaseClient {
             });
         }
         return emailAddresses;
-    }
+    };
 
     async getLatestUserUpdate(): Promise<Date> {
         const result = await this.query(GET_LATEST_USER_UPDATE_QUERY);
@@ -296,7 +243,7 @@ class PostgresClient implements DatabaseClient {
         } finally {
             client.release();
         }
-    }
+    };
 
     async deleteUserById(userId: string): Promise<void >{
         await this.deleteUsersByIds([userId]);
@@ -308,12 +255,8 @@ class PostgresClient implements DatabaseClient {
         }
         await this.query(DELETE_USERS_BY_IDS_QUERY, [userIds]);
     };
-
-    async shutdown() {
-        await this.pool.end();
-    }
 }
 
 export {
-    PostgresClient
+    UserPostgresClient
 };

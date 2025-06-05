@@ -3,7 +3,8 @@ import path from 'path';
 import {
     initializeAuth
 } from '@/api/auth';
-import { deleteUsersByIds, getUsers, initializeDatabase, syncUsers } from '@/api/database';
+import { initializeDatabase } from '@/api/database';
+import { deleteUsersByIds, getUsers, syncUsers } from '@/api/users';
 import { PostgresConfiguration } from '@/models/configuration';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
