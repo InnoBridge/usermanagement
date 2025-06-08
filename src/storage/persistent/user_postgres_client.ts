@@ -142,6 +142,9 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
 
     async getUserByUsername(username: string): Promise<User | null> {
         const result = await this.query(GET_USER_BY_USERNAME_QUERY, [username]);
+        if (result.rows.length === 0) {
+            return null;
+        }
         return {
             id: result.rows[0].id,
             username: result.rows[0].username,
