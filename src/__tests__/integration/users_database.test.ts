@@ -4,6 +4,7 @@ import { PostgresConfiguration } from '@/models/configuration';
 import { UserDatabaseClient } from '@/storage/persistent/user_database_client';
 import { UserPostgresClient } from '@/storage/persistent/user_postgres_client';
 import { User } from '@/models/user';
+import { user } from '@/index';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -133,6 +134,14 @@ const getUsersTest = async (client: UserDatabaseClient) => {
     console.log('getUsersTest completed successfully');
 }
 
+const getUserByUsernameTest = async (client: UserDatabaseClient) => {
+    console.log('Starting getUserByUsername test...');
+    const users = await client.getUsers();
+    const user = await client.getUserByUsername(users[0].username!);
+    console.log(`User found: ${user ? JSON.stringify(user, null, 2) : 'No user found'}`);
+    console.log('getUserByUsernameTest completed successfully');
+}
+
 const deleteUserByIdTest = async (client: UserDatabaseClient) => {
     console.log('Starting deleteUserById test...');
     const userId = 'user_1';
@@ -178,6 +187,7 @@ const deleteUsersByIdsTest = async (client: UserDatabaseClient) => {
         await countUsersTest(clerkClient);
         await getEmailAddressesByUserIdsTest(clerkClient);
         await getUsersTest(clerkClient);
+        await getUserByUsernameTest(clerkClient);
         await deleteUserByIdTest(clerkClient);
         await deleteUsersByIdsTest(clerkClient);
 
