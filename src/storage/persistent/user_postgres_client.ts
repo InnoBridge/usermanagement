@@ -5,6 +5,7 @@ import {
     COUNT_USERS_QUERY,
     GET_USERS_QUERY,
     GET_USERS_BY_IDS_QUERY,
+    GET_USER_BY_USERNAME_QUERY,
     GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY,
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
@@ -138,6 +139,23 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         }
         return users;
     };
+
+    async getUserByUsername(username: string): Promise<User | null> {
+        const result = await this.query(GET_USER_BY_USERNAME_QUERY, [username]);
+        return {
+            id: result.rows[0].id,
+            username: result.rows[0].username,
+            firstName: result.rows[0].first_name,
+            lastName: result.rows[0].last_name,
+            imageUrl: result.rows[0].image_url,
+            passwordEnabled: result.rows[0].password_enabled,
+            twoFactorEnabled: result.rows[0].two_factor_enabled,
+            backupCodeEnabled: result.rows[0].backup_code_enabled,
+            createdAt: new Date(result.rows[0].created_at).getTime(),
+            updatedAt: new Date(result.rows[0].updated_at).getTime(),
+            emailAddresses: [] // Will be populated separately
+        } as User;
+    }
 
     async getEmailAddressesByUserIds(userIds: string[]): Promise<EmailAddress[]> {
         if (userIds.length === 0) {

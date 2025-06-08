@@ -7,6 +7,7 @@ interface UserDatabaseClient extends BaseDatabaseClient {
     getUsers(updatedAfter?: number, limit?: number, page?: number): Promise<User[]>;
     getUserById(userId: string): Promise<User | null>;
     getUsersByIds(userIds: string[]): Promise<User[]>;
+    getUserByUsername(username: string): Promise<User | null>;
     getEmailAddressesByUserIds(userIds: string[]): Promise<EmailAddress[]>;
     getLatestUserUpdate(): Promise<Date>;
     upsertUsers(user: User[]): Promise<void>;
