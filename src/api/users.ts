@@ -24,6 +24,13 @@ const getUsersByIds = async (userIds: string[]): Promise<User[]> => {
     return await getDatabaseClient()!.getUsersByIds(userIds);
 };
 
+const getUserByUsername = async (username: string): Promise<User | null> => {
+    if (!isDatabaseClientSet()) {
+        throw new Error("Database client not initialized. Call initializeDatabase first.");
+    }
+    return await getDatabaseClient()!.getUserByUsername(username);
+};
+
 const getEmailAddressesByUserIds = async (userIds: string[]): Promise<EmailAddress[]> => {
     if (!isDatabaseClientSet()) {
         throw new Error("Database client not initialized. Call initializeDatabase first.");
@@ -88,6 +95,7 @@ export {
     getUsers,
     getUserById,
     getUsersByIds,
+    getUserByUsername,
     getEmailAddressesByUserIds,
     getLatestUserUpdate,
     upsertUsers,

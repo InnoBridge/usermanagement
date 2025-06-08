@@ -13,7 +13,7 @@ const UPDATE_SCHEMA_VERSION_QUERY =
 const CREATE_USERS_TABLE_QUERY = 
     `CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
-        username VARCHAR(255),
+        username VARCHAR(255) UNIQUE,
         first_name VARCHAR(255),
         last_name VARCHAR(255),
         image_url TEXT NOT NULL,
@@ -62,6 +62,13 @@ const GET_USERS_BY_IDS_QUERY =
      FROM users u
      WHERE u.id = ANY($1)
      ORDER BY u.updated_at DESC`;
+
+const GET_USER_BY_USERNAME_QUERY = 
+    `SELECT u.id, u.username, u.first_name, u.last_name, u.image_url, 
+            u.password_enabled, u.two_factor_enabled, u.backup_code_enabled,
+            u.created_at, u.updated_at
+     FROM users u
+     WHERE u.username = $1`;
 
 const GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY = 
     `SELECT id, user_id, email_address 
@@ -238,6 +245,7 @@ export {
     COUNT_USERS_QUERY,
     GET_USERS_QUERY,
     GET_USERS_BY_IDS_QUERY,
+    GET_USER_BY_USERNAME_QUERY,
     GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY,
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
