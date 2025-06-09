@@ -145,7 +145,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         if (result.rows.length === 0) {
             return null;
         }
-        return {
+        const user: User = {
             id: result.rows[0].id,
             username: result.rows[0].username,
             firstName: result.rows[0].first_name,
@@ -157,7 +157,10 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             createdAt: new Date(result.rows[0].created_at).getTime(),
             updatedAt: new Date(result.rows[0].updated_at).getTime(),
             emailAddresses: [] // Will be populated separately
-        } as User;
+        };
+        const emailAddresses = await this.getEmailAddressesByUserIds([user.id]);
+        user.emailAddresses = emailAddresses.filter(email => email.userId === user.id);
+        return user;
     }
 
     async getEmailAddressesByUserIds(userIds: string[]): Promise<EmailAddress[]> {
