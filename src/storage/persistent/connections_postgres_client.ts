@@ -17,7 +17,7 @@ import {
     GET_CONNECTIONS_BY_USER_ID_QUERY,
     ADD_CONNECTION_QUERY,
     DELETE_CONNECTION_BY_ID_QUERY
-} from '@/storage/queries';
+} from '@/storage/persistent/queries';
 import { PostgresConfiguration } from '@/models/configuration';
 import { Connection, ConnectionRequest, ConnectionRequestStatus } from '@/models/connection';
 

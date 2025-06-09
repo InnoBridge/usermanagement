@@ -5,7 +5,7 @@ import {
     GET_SCHEMA_VERSION_QUERY,
     UPDATE_SCHEMA_VERSION_QUERY,
 
-} from '@/storage/queries';
+} from '@/storage/persistent/queries';
 import { PostgresConfiguration } from '@/models/configuration';
 
 class BasePostgresClient implements BaseDatabaseClient {

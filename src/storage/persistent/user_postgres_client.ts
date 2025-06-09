@@ -14,7 +14,7 @@ import {
     CREATE_USERS_USERNAME_INDEX,
     CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
     CREATE_EMAIL_ADDRESSES_EMAIL_INDEX
-} from '@/storage/queries';
+} from '@/storage/persistent/queries';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
 import { BasePostgresClient } from '@/storage/persistent/base_postgres_client';
