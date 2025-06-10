@@ -9,7 +9,7 @@ interface Connection {
   connectionId: number;
   userId1: string;
   userId2: string;
-  connectedAt: number; // Also changed to Date for consistency
+  connectedAt: number;
 };
 
 interface ConnectionRequest {

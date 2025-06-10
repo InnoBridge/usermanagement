@@ -9,7 +9,7 @@
     "types": ["vitest/globals"],
     "baseUrl": ".",
     "paths": {
-          "@/*": ["src/*"],
+          "@/*": ["src/*"]
     }
   },
   "include": ["src/**/*", "tsup.config.ts", "vitest.config.ts"]
