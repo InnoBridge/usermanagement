@@ -62,7 +62,28 @@ class ConnectionsPostgresClient extends UserPostgresClient implements Connection
 
     async createConnectionRequest(requesterId: string, receiverId: string, greetingText?: string): Promise<ConnectionRequest> {
         try {
-            const result = await this.query(ADD_CONNECTION_REQUEST_QUERY, [requesterId, receiverId, greetingText]);
+            // Get requester and receiver user data
+            const requester = await this.getUserById(requesterId);
+            const receiver = await this.getUserById(receiverId);
+
+            if (!requester || !receiver) {
+                throw new Error("Requester or receiver user not found.");
+            }
+
+            const result = await this.query(ADD_CONNECTION_REQUEST_QUERY, [
+                requesterId, 
+                requester.username,
+                requester.firstName,
+                requester.lastName,
+                requester.imageUrl || null, // Ensure consistent null handling
+                receiverId,
+                receiver.username,
+                receiver.firstName,
+                receiver.lastName,
+                receiver.imageUrl || null, // Ensure consistent null handling
+                greetingText
+            ]);
+
             return mapToConnectionRequest(result.rows[0]);
         } catch (error: any) {
             console.error("Error creating connection request:", error.message);
@@ -102,10 +123,37 @@ class ConnectionsPostgresClient extends UserPostgresClient implements Connection
                 throw new Error("Request not found, not pending, or wrong receiver.");
             }
             const request = mapToConnectionRequest(result.rows[0]);
-            await this.queryWithClient(client, ADD_CONNECTION_QUERY, [
-                request.requesterId, 
-                request.receiverId
-            ]);
+
+            let addConnectionQueryParams = [];
+            if (request.receiverId.localeCompare(request.requesterId) < 0) {
+                addConnectionQueryParams = [
+                    request.receiverId,      // user1
+                    request.receiverUsername,
+                    request.receiverFirstName,
+                    request.receiverLastName,
+                    request.receiverImageUrl || null, // Ensure consistent null handling
+                    request.requesterId,     // user2
+                    request.requesterUsername,
+                    request.requesterFirstName,
+                    request.requesterLastName,
+                    request.requesterImageUrl || null // Ensure consistent null handling
+                ];
+            } else {
+                addConnectionQueryParams = [
+                    request.requesterId,     // user1
+                    request.requesterUsername,
+                    request.requesterFirstName,
+                    request.requesterLastName,
+                    request.requesterImageUrl || null, // Ensure consistent null handling
+                    request.receiverId,      // user2
+                    request.receiverUsername,
+                    request.receiverFirstName,
+                    request.receiverLastName,
+                    request.receiverImageUrl || null // Ensure consistent null handlingf
+                ];
+            }
+
+            await this.queryWithClient(client, ADD_CONNECTION_QUERY, addConnectionQueryParams);
             await client.query('COMMIT');
             return request;
         } catch (error) {
@@ -151,12 +199,7 @@ class ConnectionsPostgresClient extends UserPostgresClient implements Connection
                 return null;
             }
             const row = result.rows[0];
-            const connection: Connection = {
-                connectionId: row.connection_id,
-                userId1: row.user_id1,
-                userId2: row.user_id2,
-                connectedAt: row.connected_at,
-            };
+            const connection: Connection = mapToConnection(row);
             return connection;
         } catch (error) {
             console.error("Error getting connection by user IDs pair:", error);
@@ -169,12 +212,7 @@ class ConnectionsPostgresClient extends UserPostgresClient implements Connection
             const result = await this.query(GET_CONNECTIONS_BY_USER_ID_QUERY, [userId]);
             const connections: Connection[] = [];
             for (const row of result.rows) {
-                const connection: Connection = {
-                    connectionId: row.connection_id,
-                    userId1: row.user_id1,
-                    userId2: row.user_id2,
-                    connectedAt: new Date(row.connected_at).getTime(),
-                };
+                const connection: Connection = mapToConnection(row);
                 connections.push(connection);
             }
             return connections;
@@ -198,13 +236,38 @@ const mapToConnectionRequest = (row: any): ConnectionRequest => {
     return {
         requestId: row.request_id,
         requesterId: row.requester_id,
+        requesterUsername: row.requester_username,
+        requesterFirstName: row.requester_first_name,
+        requesterLastName: row.requester_last_name,
+        requesterImageUrl: row.requester_image_url || null, // Ensure consistent null handling
         receiverId: row.receiver_id,
+        receiverUsername: row.receiver_username,
+        receiverFirstName: row.receiver_first_name,
+        receiverLastName: row.receiver_last_name,
+        receiverImageUrl: row.receiver_image_url || null, // Ensure consistent null handling
         greetingText: row.greeting_text,
         status: row.status as ConnectionRequestStatus,
         createdAt: new Date(row.created_at).getTime(),
         respondedAt: row.responded_at ? new Date(row.responded_at).getTime() : null
     };
 }
+
+const mapToConnection = (row: any): Connection => {
+    return {
+        connectionId: row.connection_id,
+        userId1: row.user_id1,
+        userId1Username: row.user_id1_username,
+        userId1FirstName: row.user_id1_first_name,
+        userId1LastName: row.user_id1_last_name,
+        userId1ImageUrl: row.user_id1_image_url || null, // Ensure consistent null handling
+        userId2: row.user_id2,
+        userId2Username: row.user_id2_username,
+        userId2FirstName: row.user_id2_first_name,
+        userId2LastName: row.user_id2_last_name,
+        userId2ImageUrl: row.user_id2_image_url || null, // Ensure consistent null handling
+        connectedAt: new Date(row.connected_at).getTime()
+    };
+};
 
 export { 
     ConnectionsPostgresClient 
