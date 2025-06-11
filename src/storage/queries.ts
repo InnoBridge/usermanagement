@@ -133,10 +133,18 @@ const DELETE_USERS_BY_IDS_QUERY =
     `DELETE FROM users WHERE id = ANY($1)`;
 
 const CREATE_CONNECTION_REQUESTS_TABLE_QUERY =
-    `CREATE TABLE connection_requests (
+    `CREATE TABLE IF NOT EXISTS connection_requests (
         request_id     SERIAL PRIMARY KEY,
         requester_id   TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        requester_username VARCHAR(255),
+        requester_first_name VARCHAR(255),
+        requester_last_name VARCHAR(255),
+        requester_image_url TEXT,
         receiver_id    TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        receiver_username VARCHAR(255),
+        receiver_first_name VARCHAR(255),
+        receiver_last_name VARCHAR(255),
+        receiver_image_url TEXT,
         greeting_text  TEXT    NULL,                                                
         status         VARCHAR(10) NOT NULL DEFAULT 'pending'
                         CHECK (status IN ('pending','accepted','rejected','canceled')),
@@ -160,10 +168,18 @@ const ADD_NO_SELF_REQUESTS_CHECK_QUERY =
     CHECK (requester_id <> receiver_id);`;
 
 const CREATE_CONNECTIONS_TABLE_QUERY = 
-    `CREATE TABLE connections (
+    `CREATE TABLE IF NOT EXISTS connections (
         connection_id  SERIAL PRIMARY KEY,
         user_id1       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user_id1_username VARCHAR(255),
+        user_id1_first_name VARCHAR(255),
+        user_id1_last_name VARCHAR(255),
+        user_id1_image_url TEXT,
         user_id2       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user_id2_username VARCHAR(255),
+        user_id2_first_name VARCHAR(255),
+        user_id2_last_name VARCHAR(255),
+        user_id2_image_url TEXT,
         connected_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`;
 
@@ -179,15 +195,15 @@ const CREATE_UNIQUE_CONNECTIONS_PAIR_INDEX_QUERY =
         ON connections (user_id1, user_id2)`;
 
 const GET_CONNECTION_REQUESTS_BY_USER_ID_QUERY =
-    `SELECT request_id, requester_id, receiver_id, greeting_text, status, created_at, responded_at
+    `SELECT request_id, requester_id, requester_username, requester_first_name, requester_last_name, requester_image_url, receiver_id, receiver_username, receiver_first_name, receiver_last_name, receiver_image_url, greeting_text, status, created_at, responded_at
      FROM connection_requests
      WHERE requester_id = $1 OR receiver_id = $1
      ORDER BY created_at DESC`;
 
 const ADD_CONNECTION_REQUEST_QUERY =
-    `INSERT INTO connection_requests (requester_id, receiver_id, greeting_text)
-     VALUES ($1, $2, $3)
-     RETURNING request_id, requester_id, receiver_id, greeting_text, status, created_at, responded_at`;
+    `INSERT INTO connection_requests (requester_id, requester_username, requester_first_name, requester_last_name, requester_image_url, receiver_id, receiver_username, receiver_first_name, receiver_last_name, receiver_image_url, greeting_text)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     RETURNING request_id, requester_id, requester_username, requester_first_name, requester_last_name, requester_image_url, receiver_id, receiver_username, receiver_first_name, receiver_last_name, receiver_image_url, greeting_text, status, created_at, responded_at`;
 
 // Update connection request status from pending -> canceled (only requester can cancel)
 const UPDATE_CONNECTION_REQUEST_TO_CANCELED_QUERY =
@@ -196,7 +212,7 @@ const UPDATE_CONNECTION_REQUEST_TO_CANCELED_QUERY =
      WHERE request_id = $1 
        AND requester_id = $2 
        AND status = 'pending'
-     RETURNING request_id, requester_id, receiver_id, greeting_text, status, created_at, responded_at`;
+     RETURNING request_id, requester_id, requester_username, requester_first_name, requester_last_name, requester_image_url, receiver_id, receiver_username, receiver_first_name, receiver_last_name, receiver_image_url, greeting_text, status, created_at, responded_at`;
 
 // Update connection request status from pending -> accepted/rejected (only receiver can accept/reject)
 const UPDATE_CONNECTION_REQUEST_STATUS_BY_RECEIVER_QUERY =
@@ -205,33 +221,33 @@ const UPDATE_CONNECTION_REQUEST_STATUS_BY_RECEIVER_QUERY =
      WHERE request_id = $1 
        AND receiver_id = $2 
        AND status = 'pending'
-     RETURNING request_id, requester_id, receiver_id, greeting_text, status, created_at, responded_at`;
+     RETURNING request_id, requester_id, requester_username, requester_first_name, requester_last_name, requester_image_url, receiver_id, receiver_username, receiver_first_name, receiver_last_name, receiver_image_url, greeting_text, status, created_at, responded_at`;
 
 const DELETE_CONNECTION_REQUEST_QUERY =
     `DELETE FROM connection_requests
      WHERE request_id = $1`;
 
 const GET_CONNECTION_BY_USER_IDS_PAIR_QUERY =
-    `SELECT connection_id, user_id1, user_id2, connected_at
+    `SELECT connection_id, user_id1, user_id1_username, user_id1_first_name, user_id1_last_name, user_id1_image_url, user_id2, user_id2_username, user_id2_first_name, user_id2_last_name, user_id2_image_url, connected_at
      FROM connections
      WHERE (user_id1 = $1 AND user_id2 = $2) OR (user_id1 = $2 AND user_id2 = $1)
      LIMIT 1`;
 
 const GET_CONNECTIONS_BY_USER_ID_QUERY = 
-    `SELECT connection_id, user_id1, user_id2, connected_at
+    `SELECT connection_id, user_id1, user_id1_username, user_id1_first_name, user_id1_last_name, user_id1_image_url, user_id2, user_id2_username, user_id2_first_name, user_id2_last_name, user_id2_image_url, connected_at
      FROM connections
      WHERE user_id1 = $1 OR user_id2 = $1
      ORDER BY connected_at DESC`;
 
 const ADD_CONNECTION_QUERY =
-    `INSERT INTO connections (user_id1, user_id2)
-     VALUES (LEAST($1, $2), GREATEST($1, $2))
-     RETURNING connection_id, user_id1, user_id2, connected_at`;
+    `INSERT INTO connections (user_id1, user_id1_username, user_id1_first_name, user_id1_last_name, user_id1_image_url, user_id2, user_id2_username, user_id2_first_name, user_id2_last_name, user_id2_image_url)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING connection_id, user_id1, user_id1_username, user_id1_first_name, user_id1_last_name, user_id1_image_url, user_id2, user_id2_username, user_id2_first_name, user_id2_last_name, user_id2_image_url, connected_at`;
 
 const DELETE_CONNECTION_BY_ID_QUERY =
     `DELETE FROM connections
      WHERE connection_id = $1
-     RETURNING connection_id, user_id1, user_id2, connected_at`;
+     RETURNING connection_id, user_id1, user_id1_username, user_id1_first_name, user_id1_last_name, user_id1_image_url, user_id2, user_id2_username, user_id2_first_name, user_id2_last_name, user_id2_image_url, connected_at`;
      
 export {
     CREATE_VERSION_TABLE_QUERY,
