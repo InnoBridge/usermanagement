@@ -1,4 +1,4 @@
-import { UserDatabaseClient } from '@/storage/persistent/user_database_client';
+import { UserDatabaseClient } from '@/storage/user_database_client';
 import { ConnectionRequest, Connection } from '@/models/connection';
 
 interface ConnectionsDatabaseClient extends UserDatabaseClient {
@@ -8,6 +8,7 @@ interface ConnectionsDatabaseClient extends UserDatabaseClient {
     acceptConnectionRequest(requestId: number, receiverId: string): Promise<ConnectionRequest | null>;
     rejectConnectionRequest(requestId: number, receiverId: string): Promise<ConnectionRequest | null>;
     deleteConnectionRequest(requestId: number): Promise<void>;
+    getConnectionById(connectionId: number): Promise<Connection | null>;
     getConnectionByUserIdsPair(userId1: string, userId2: string): Promise<Connection | null>;
     getConnectionsByUserId(userId: string): Promise<Connection[]>;
     deleteConnectionById(connectionId: number): Promise<void>;

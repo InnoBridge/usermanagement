@@ -1,6 +1,6 @@
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
-import { BaseDatabaseClient } from '@/storage/persistent/base_database_client';
+import { BaseDatabaseClient } from '@/storage/base_database_client';
 
 interface UserDatabaseClient extends BaseDatabaseClient {
     countUsers(updatedAfter?: number): Promise<number>;

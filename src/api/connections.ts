@@ -52,6 +52,13 @@ const deleteConnectionRequest = async (requestId: number): Promise<void> => {
     return await getDatabaseClient()!.deleteConnectionRequest(requestId);
 };
 
+const getConnectionById = async (connectionId: number): Promise<Connection | null> => {
+    if (!isDatabaseClientSet()) {
+        throw new Error("Database client not initialized. Call initializeDatabase first.");
+    }
+    return await getDatabaseClient()!.getConnectionById(connectionId);
+};
+
 const getConnectionByUserIdsPair = async (userId1: string, userId2: string): Promise<Connection | null> => {
     if (!isDatabaseClientSet()) {
         throw new Error("Database client not initialized. Call initializeDatabase first.");
@@ -80,6 +87,7 @@ export {
     acceptConnectionRequest,
     rejectConnectionRequest,
     deleteConnectionRequest,
+    getConnectionById,
     getConnectionByUserIdsPair,
     getConnectionsByUserId,
     deleteConnectionById

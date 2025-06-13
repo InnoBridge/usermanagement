@@ -1,8 +1,8 @@
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { PostgresConfiguration } from '@/models/configuration';
-import { UserDatabaseClient } from '@/storage/persistent/user_database_client';
-import { UserPostgresClient } from '@/storage/persistent/user_postgres_client';
+import { UserDatabaseClient } from '@/storage/user_database_client';
+import { UserPostgresClient } from '@/storage/user_postgres_client';
 import { User } from '@/models/user';
 import { user } from '@/index';
 

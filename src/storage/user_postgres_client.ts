@@ -17,8 +17,8 @@ import {
 } from '@/storage/queries';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
-import { BasePostgresClient } from '@/storage/persistent/base_postgres_client';
-import { UserDatabaseClient } from '@/storage/persistent/user_database_client';
+import { BasePostgresClient } from '@/storage/base_postgres_client';
+import { UserDatabaseClient } from '@/storage/user_database_client';
 import { PostgresConfiguration } from '@/models/configuration';
 
 class UserPostgresClient extends BasePostgresClient implements UserDatabaseClient {

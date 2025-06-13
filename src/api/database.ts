@@ -1,5 +1,5 @@
-import { ConnectionsDatabaseClient } from '@/storage/persistent/connections_database_client';
-import { ConnectionsPostgresClient } from '@/storage/persistent/connections_postgres_client';
+import { ConnectionsDatabaseClient } from '@/storage/connections_database_client';
+import { ConnectionsPostgresClient } from '@/storage/connections_postgres_client';
 import { DatabaseConfiguration } from '@/models/configuration';
 import { PoolClient } from 'pg';
 
