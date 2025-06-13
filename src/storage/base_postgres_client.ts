@@ -1,5 +1,5 @@
 import { Pool, PoolClient, QueryResult } from 'pg';
-import { BaseDatabaseClient } from '@/storage/persistent/base_database_client';
+import { BaseDatabaseClient } from '@/storage/base_database_client';
 import {
     CREATE_VERSION_TABLE_QUERY,
     GET_SCHEMA_VERSION_QUERY,

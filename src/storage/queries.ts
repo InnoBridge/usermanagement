@@ -227,6 +227,12 @@ const DELETE_CONNECTION_REQUEST_QUERY =
     `DELETE FROM connection_requests
      WHERE request_id = $1`;
 
+const GET_CONNECTION_BY_ID_QUERY =
+    `SELECT connection_id, user_id1, user_id1_username, user_id1_first_name, user_id1_last_name, user_id1_image_url, user_id2, user_id2_username, user_id2_first_name, user_id2_last_name, user_id2_image_url, connected_at
+     FROM connections
+     WHERE connection_id = $1
+     LIMIT 1`;
+
 const GET_CONNECTION_BY_USER_IDS_PAIR_QUERY =
     `SELECT connection_id, user_id1, user_id1_username, user_id1_first_name, user_id1_last_name, user_id1_image_url, user_id2, user_id2_username, user_id2_first_name, user_id2_last_name, user_id2_image_url, connected_at
      FROM connections
@@ -278,6 +284,7 @@ export {
     UPDATE_CONNECTION_REQUEST_TO_CANCELED_QUERY,
     UPDATE_CONNECTION_REQUEST_STATUS_BY_RECEIVER_QUERY,
     DELETE_CONNECTION_REQUEST_QUERY,
+    GET_CONNECTION_BY_ID_QUERY,
     GET_CONNECTION_BY_USER_IDS_PAIR_QUERY,
     GET_CONNECTIONS_BY_USER_ID_QUERY,
     ADD_CONNECTION_QUERY,

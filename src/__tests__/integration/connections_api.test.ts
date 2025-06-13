@@ -6,6 +6,7 @@ import {
     getConnectionRequestsByUserId,
     createConnectionRequest, 
     deleteConnectionRequest, 
+    getConnectionById,
     getConnectionByUserIdsPair,
     rejectConnectionRequest,
     acceptConnectionRequest,
@@ -139,6 +140,26 @@ const acceptConnectionRequestTest = async () => {
     }
 };
 
+const getConnectionByIdTest = async () => {
+    console.log('Starting getConnectionByIdTest ...');
+    let connectionById = null;
+    try {
+        const connectionRequest = await createConnectionRequest(USER1!, USER2!, 'Test connection request');
+        const acceptedRequest = await acceptConnectionRequest(connectionRequest.requestId, USER2!);
+        const connectionsByIdPair = await getConnectionByUserIdsPair(USER1!, USER2!)
+        connectionById = await getConnectionById(connectionsByIdPair!.connectionId);
+        console.log('Connection by ID:', JSON.stringify(connectionById, null, 2));
+        console.log('getConnectionByIdTest completed successfully');
+    } catch (error) {
+        console.error('Error in getConnectionByIdTest:', error);
+        throw error;
+    } finally {
+        if (connectionById) {
+            await deleteConnectionById(connectionById.connectionId);
+        }
+    }
+}
+
 (async function main() {
     try {
         // sync test
@@ -151,6 +172,7 @@ const acceptConnectionRequestTest = async () => {
         await cancelConnectionRequestTest();
         await rejectConnectionRequestTest();
         await acceptConnectionRequestTest();
+        await getConnectionByIdTest();
         console.log("🎉 All integration tests passed");
     } catch (err) {
         console.error("❌ Integration tests failed:", err);

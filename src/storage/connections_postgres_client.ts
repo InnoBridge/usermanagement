@@ -1,6 +1,6 @@
 import { PoolClient } from 'pg';
-import { UserPostgresClient } from '@/storage/persistent/user_postgres_client';
-import { ConnectionsDatabaseClient } from '@/storage/persistent/connections_database_client';
+import { UserPostgresClient } from '@/storage/user_postgres_client';
+import { ConnectionsDatabaseClient } from '@/storage/connections_database_client';
 import {
     CREATE_CONNECTION_REQUESTS_PAIR_INDEX_QUERY,
     ADD_NO_SELF_REQUESTS_CHECK_QUERY,
@@ -13,6 +13,7 @@ import {
     UPDATE_CONNECTION_REQUEST_TO_CANCELED_QUERY,
     UPDATE_CONNECTION_REQUEST_STATUS_BY_RECEIVER_QUERY,
     DELETE_CONNECTION_REQUEST_QUERY,
+    GET_CONNECTION_BY_ID_QUERY,
     GET_CONNECTION_BY_USER_IDS_PAIR_QUERY,
     GET_CONNECTIONS_BY_USER_ID_QUERY,
     ADD_CONNECTION_QUERY,
@@ -39,11 +40,11 @@ class ConnectionsPostgresClient extends UserPostgresClient implements Connection
 
     async createConnectionsTable(client: PoolClient): Promise<void> {
         await this.queryWithClient(client, CREATE_CONNECTIONS_TABLE_QUERY);
-    };
+    }
 
     async createConnectionRequestTable(client: PoolClient): Promise<void> {
       await this.queryWithClient(client, CREATE_CONNECTION_REQUESTS_TABLE_QUERY);    
-    };
+    }
 
     async getConnectionRequestsByUserId(userId: string): Promise<ConnectionRequest[]> {
         try {
@@ -188,6 +189,21 @@ class ConnectionsPostgresClient extends UserPostgresClient implements Connection
             await this.query(DELETE_CONNECTION_REQUEST_QUERY, [requestId]);
         } catch (error) {
             console.error("Error deleting connection request:", requestId, error);
+            throw error;
+        }
+    };
+
+    async getConnectionById(connectionId: number): Promise<Connection | null> {
+        try {
+            const result = await this.query(GET_CONNECTION_BY_ID_QUERY, [connectionId]);
+            if (result.rows.length === 0) {
+                return null;
+            }
+            const row = result.rows[0];
+            const connection: Connection = mapToConnection(row);
+            return connection;
+        } catch (error) {
+            console.error("Error getting connection by ID:", error);
             throw error;
         }
     };
