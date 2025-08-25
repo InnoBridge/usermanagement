@@ -32,6 +32,19 @@ const CREATE_EMAIL_ADDRESSES_TABLE_QUERY =
         email_address VARCHAR(255) NOT NULL UNIQUE
     )`;
 
+
+const CREATE_ADDRESSES_TABLE_QUERY =
+`CREATE TABLE IF NOT EXISTS addresses (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    line1 TEXT NOT NULL,
+    line2 TEXT,
+    city VARCHAR(255) NOT NULL,
+    province VARCHAR(255),
+    postal_code VARCHAR(64),
+    country VARCHAR(64) NOT NULL
+)`;
+
 const CREATE_USERS_USERNAME_INDEX = 
     `CREATE INDEX IF NOT EXISTS idx_users_username ON users(username) WHERE username IS NOT NULL`;
 
@@ -40,6 +53,9 @@ const CREATE_EMAIL_ADDRESSES_USER_ID_INDEX =
 
 const CREATE_EMAIL_ADDRESSES_EMAIL_INDEX = 
     `CREATE INDEX IF NOT EXISTS idx_email_addresses_email ON email_addresses(email_address)`;
+
+const CREATE_ADDRESSES_USER_ID_INDEX =
+    `CREATE UNIQUE INDEX IF NOT EXISTS uq_addresses_user_id ON addresses(user_id)`;
 
 const COUNT_USERS_QUERY =
     `SELECT COUNT(*) as total 
@@ -75,7 +91,13 @@ const GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY =
      FROM email_addresses 
      WHERE user_id = ANY($1)
      ORDER BY user_id`;
-    
+
+const GET_ADDRESSES_BY_USER_IDS_QUERY = 
+    `SELECT id, user_id, line1, line2, city, province, postal_code, country
+     FROM addresses
+     WHERE user_id = ANY($1)
+     ORDER BY user_id`;
+
 const GET_LATEST_USER_UPDATE_QUERY = 
     `SELECT MAX(updated_at) as latest_update FROM users`;
 
@@ -261,14 +283,17 @@ export {
     UPDATE_SCHEMA_VERSION_QUERY,
     CREATE_USERS_TABLE_QUERY,
     CREATE_EMAIL_ADDRESSES_TABLE_QUERY,
+    CREATE_ADDRESSES_TABLE_QUERY,
     CREATE_USERS_USERNAME_INDEX,
     CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
     CREATE_EMAIL_ADDRESSES_EMAIL_INDEX,
+    CREATE_ADDRESSES_USER_ID_INDEX,
     COUNT_USERS_QUERY,
     GET_USERS_QUERY,
     GET_USERS_BY_IDS_QUERY,
     GET_USER_BY_USERNAME_QUERY,
     GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY,
+    GET_ADDRESSES_BY_USER_IDS_QUERY,
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
     UPSERT_EMAIL_ADDRESSES_QUERY,

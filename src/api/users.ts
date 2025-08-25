@@ -2,6 +2,7 @@ import { getUserList } from '@/api/auth';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
 import { isDatabaseClientSet, getDatabaseClient } from '@/api/database';
+import { Address } from '@/models/address';
 
 const getUsers = async (updatedAfter?: number, limit?: number, page?: number): Promise<User[]> => {
     if (!isDatabaseClientSet()) {
@@ -36,6 +37,13 @@ const getEmailAddressesByUserIds = async (userIds: string[]): Promise<EmailAddre
         throw new Error("Database client not initialized. Call initializeDatabase first.");
     }
     return await getDatabaseClient()!.getEmailAddressesByUserIds(userIds);
+};
+
+const getAddressesByUserIds = async (userIds: string[]): Promise<Address[]> => {
+    if (!isDatabaseClientSet()) {
+        throw new Error("Database client not initialized. Call initializeDatabase first.");
+    }
+    return await getDatabaseClient()!.getAddressesByUserIds(userIds);
 };
 
 const getLatestUserUpdate = async (): Promise<Date> => {
@@ -97,6 +105,7 @@ export {
     getUsersByIds,
     getUserByUsername,
     getEmailAddressesByUserIds,
+    getAddressesByUserIds,
     getLatestUserUpdate,
     upsertUsers,
     syncUsers,
