@@ -151,6 +151,35 @@ const UPSERT_EMAIL_ADDRESSES_QUERY =
         user_id = EXCLUDED.user_id,
         email_address = EXCLUDED.email_address`;
 
+const UPSERT_ADDRESS_QUERY =
+    `INSERT INTO addresses (id, user_id, line1, line2, city, province, postal_code, country)
+     SELECT 
+        id,
+        user_id,
+        line1,
+        line2,
+        city,
+        province,
+        postal_code,
+        country
+     FROM 
+        (SELECT UNNEST($1::text[]) as id,
+                UNNEST($2::text[]) as user_id,
+                UNNEST($3::text[]) as line1,
+                UNNEST($4::text[]) as line2,
+                UNNEST($5::varchar[]) as city,
+                UNNEST($6::varchar[]) as province,
+                UNNEST($7::varchar[]) as postal_code,
+                UNNEST($8::varchar[]) as country)
+     ON CONFLICT (user_id) 
+     DO UPDATE SET 
+        line1 = EXCLUDED.line1,
+        line2 = EXCLUDED.line2,
+        city = EXCLUDED.city,
+        province = EXCLUDED.province,
+        postal_code = EXCLUDED.postal_code,
+        country = EXCLUDED.country`;
+
 const DELETE_USERS_BY_IDS_QUERY = 
     `DELETE FROM users WHERE id = ANY($1)`;
 
@@ -297,6 +326,7 @@ export {
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
     UPSERT_EMAIL_ADDRESSES_QUERY,
+    UPSERT_ADDRESS_QUERY,
     DELETE_USERS_BY_IDS_QUERY,
     CREATE_CONNECTION_REQUESTS_TABLE_QUERY,
     CREATE_CONNECTIONS_TABLE_QUERY,

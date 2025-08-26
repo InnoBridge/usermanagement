@@ -12,6 +12,7 @@ import {
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
     UPSERT_EMAIL_ADDRESSES_QUERY,
+    UPSERT_ADDRESS_QUERY,
     DELETE_USERS_BY_IDS_QUERY,
     CREATE_USERS_USERNAME_INDEX,
     CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
@@ -263,6 +264,16 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             const emailUserIds: string[] = [];
             const emailAddresses: string[] = [];
 
+            // Prepare address data arrays
+            const addressIds: string[] = [];
+            const addressUserIds: string[] = [];
+            const addressLine1: string[] = [];
+            const addressLine2: (string | null)[] = [];
+            const addressCity: string[] = [];
+            const addressProvince: (string | null)[] = [];
+            const addressPostalCode: (string | null)[] = [];
+            const addressCountry: string[] = [];
+
             for (const user of users) {
                 userIds.push(user.id);
                 usernames.push(user.username);
@@ -279,6 +290,17 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                     emailIds.push(email.id);
                     emailUserIds.push(user.id);
                     emailAddresses.push(email.emailAddress);
+                }
+
+                if (user.address) {
+                    addressIds.push(user.address.id);
+                    addressUserIds.push(user.id);
+                    addressLine1.push(user.address.line1);
+                    addressLine2.push(user.address.line2 || null);
+                    addressCity.push(user.address.city);
+                    addressProvince.push(user.address.province || null);
+                    addressPostalCode.push(user.address.postalCode || null);
+                    addressCountry.push(user.address.country);
                 }
             }
 
@@ -302,6 +324,19 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                     emailIds,
                     emailUserIds,
                     emailAddresses
+                ]);
+            }
+
+            if (addressIds.length > 0) {
+                await this.queryWithClient(client, UPSERT_ADDRESS_QUERY, [
+                    addressIds,
+                    addressUserIds,
+                    addressLine1,
+                    addressLine2,
+                    addressCity,
+                    addressProvince,
+                    addressPostalCode,
+                    addressCountry
                 ]);
             }
 
