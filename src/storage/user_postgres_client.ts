@@ -2,21 +2,26 @@ import { PoolClient } from 'pg';
 import {
     CREATE_USERS_TABLE_QUERY,
     CREATE_EMAIL_ADDRESSES_TABLE_QUERY,
+    CREATE_ADDRESSES_TABLE_QUERY,
     COUNT_USERS_QUERY,
     GET_USERS_QUERY,
     GET_USERS_BY_IDS_QUERY,
     GET_USER_BY_USERNAME_QUERY,
     GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY,
+    GET_ADDRESSES_BY_USER_IDS_QUERY,
     GET_LATEST_USER_UPDATE_QUERY,
     UPSERT_USERS_QUERY,
     UPSERT_EMAIL_ADDRESSES_QUERY,
+    UPSERT_ADDRESS_QUERY,
     DELETE_USERS_BY_IDS_QUERY,
     CREATE_USERS_USERNAME_INDEX,
     CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
-    CREATE_EMAIL_ADDRESSES_EMAIL_INDEX
+    CREATE_EMAIL_ADDRESSES_EMAIL_INDEX,
+    CREATE_ADDRESSES_USER_ID_INDEX
 } from '@/storage/queries';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
+import { Address } from '@/models/address';
 import { BasePostgresClient } from '@/storage/base_postgres_client';
 import { UserDatabaseClient } from '@/storage/user_database_client';
 import { PostgresConfiguration } from '@/models/configuration';
@@ -34,6 +39,11 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             await this.queryWithClient(client, CREATE_EMAIL_ADDRESSES_USER_ID_INDEX);
             await this.queryWithClient(client, CREATE_EMAIL_ADDRESSES_EMAIL_INDEX);
         });
+
+        this.registerMigration(2, async (client) => {
+            await this.createAddressesTable(client);
+            await this.queryWithClient(client, CREATE_ADDRESSES_USER_ID_INDEX);
+        });
     }
 
     async createUsersTable(client: PoolClient): Promise<void> {
@@ -43,6 +53,10 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
     async createEmailAddressesTable(client: PoolClient): Promise<void> {
         await this.queryWithClient(client, CREATE_EMAIL_ADDRESSES_TABLE_QUERY);
     };
+
+    async createAddressesTable(client: PoolClient): Promise<void> {
+        await this.queryWithClient(client, CREATE_ADDRESSES_TABLE_QUERY);
+    }
 
     async countUsers(updatedAfter?: number): Promise<number> {
         const result = await this.query(COUNT_USERS_QUERY, [updatedAfter]);
@@ -85,9 +99,19 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             }
             userIdToEmails.get(email.userId!)!.push(email);
         }
-        
+
+        // Fetch addresses for the users
+        const addresses = await this.getAddressesByUserIds(userIds);
+        const userIdToAddresses: Map<string, Address> = new Map();
+        for (const address of addresses) {
+            userIdToAddresses.set(address.userId!, address);
+        }
+
         for (const user of users) {
             user.emailAddresses = userIdToEmails.get(user.id) || [];
+            if (userIdToAddresses.has(user.id)) {
+                user.address = userIdToAddresses.get(user.id)!;
+            }
         }
         return users;
     }
@@ -133,9 +157,19 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             }
             userIdToEmails.get(email.userId!)!.push(email);
         }
-        
+
+        // Fetch addresses for users
+        const addresses = await this.getAddressesByUserIds(userIds);
+        const userIdToAddresses: Map<string, Address> = new Map();
+        for (const address of addresses) {
+            userIdToAddresses.set(address.userId!, address);
+        }
+
         for (const user of users) {
             user.emailAddresses = userIdToEmails.get(user.id) || [];
+            if (userIdToAddresses.has(user.id)) {
+                user.address = userIdToAddresses.get(user.id)!;
+            }
         }
         return users;
     };
@@ -160,6 +194,10 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         };
         const emailAddresses = await this.getEmailAddressesByUserIds([user.id]);
         user.emailAddresses = emailAddresses.filter(email => email.userId === user.id);
+        const addresses = await this.getAddressesByUserIds([user.id]);
+        if (addresses.length > 0) {
+            user.address = addresses[0];
+        }
         return user;
     }
 
@@ -169,14 +207,22 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         }
         const result = await this.query(GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY, [userIds]);
         const emailAddresses: EmailAddress[] = [];
-        for (const row of result.rows) {
-            emailAddresses.push({
-                id: row.id,
-                userId: row.user_id,
-                emailAddress: row.email_address
-            });
-        }
+        result.rows.forEach(row => {
+            emailAddresses.push(mapToEmailAddress(row));
+        });
         return emailAddresses;
+    };
+
+    async getAddressesByUserIds(userIds: string[]): Promise<Address[]> {
+        if (userIds.length === 0) {
+            return [];
+        }
+        const result = await this.query(GET_ADDRESSES_BY_USER_IDS_QUERY, [userIds]);
+        const addresses: Address[] = [];
+        result.rows.forEach(row => {
+            addresses.push(mapToAddress(row));
+        });
+        return addresses;
     };
 
     async getLatestUserUpdate(): Promise<Date> {
@@ -218,6 +264,16 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             const emailUserIds: string[] = [];
             const emailAddresses: string[] = [];
 
+            // Prepare address data arrays
+            const addressIds: string[] = [];
+            const addressUserIds: string[] = [];
+            const addressLine1: string[] = [];
+            const addressLine2: (string | null)[] = [];
+            const addressCity: string[] = [];
+            const addressProvince: (string | null)[] = [];
+            const addressPostalCode: (string | null)[] = [];
+            const addressCountry: string[] = [];
+
             for (const user of users) {
                 userIds.push(user.id);
                 usernames.push(user.username);
@@ -234,6 +290,17 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                     emailIds.push(email.id);
                     emailUserIds.push(user.id);
                     emailAddresses.push(email.emailAddress);
+                }
+
+                if (user.address) {
+                    addressIds.push(user.address.id);
+                    addressUserIds.push(user.id);
+                    addressLine1.push(user.address.line1);
+                    addressLine2.push(user.address.line2 || null);
+                    addressCity.push(user.address.city);
+                    addressProvince.push(user.address.province || null);
+                    addressPostalCode.push(user.address.postalCode || null);
+                    addressCountry.push(user.address.country);
                 }
             }
 
@@ -260,6 +327,19 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                 ]);
             }
 
+            if (addressIds.length > 0) {
+                await this.queryWithClient(client, UPSERT_ADDRESS_QUERY, [
+                    addressIds,
+                    addressUserIds,
+                    addressLine1,
+                    addressLine2,
+                    addressCity,
+                    addressProvince,
+                    addressPostalCode,
+                    addressCountry
+                ]);
+            }
+
             await this.queryWithClient(client, 'COMMIT');
         } catch (error) {
             await this.queryWithClient(client,'ROLLBACK');
@@ -279,7 +359,28 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         }
         await this.query(DELETE_USERS_BY_IDS_QUERY, [userIds]);
     };
-}
+};
+
+const mapToEmailAddress = (row: any): EmailAddress => {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        emailAddress: row.email_address
+    };
+};
+
+const mapToAddress = (row: any): Address => {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        line1: row.line1,
+        line2: row.line2,
+        city: row.city,
+        province: row.province,
+        postalCode: row.postal_code,
+        country: row.country
+    };
+};
 
 export {
     UserPostgresClient
