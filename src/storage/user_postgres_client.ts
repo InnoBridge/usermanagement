@@ -3,6 +3,7 @@ import {
     CREATE_USERS_TABLE_QUERY,
     CREATE_EMAIL_ADDRESSES_TABLE_QUERY,
     CREATE_ADDRESSES_TABLE_QUERY,
+    MIGRATE_ADD_PHONE_AND_LANGUAGES_QUERY,
     COUNT_USERS_QUERY,
     GET_USERS_QUERY,
     GET_USERS_BY_IDS_QUERY,
@@ -44,6 +45,10 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             await this.createAddressesTable(client);
             await this.queryWithClient(client, CREATE_ADDRESSES_USER_ID_INDEX);
         });
+
+        this.registerMigration(3, async (client) => {
+            await this.queryWithClient(client, MIGRATE_ADD_PHONE_AND_LANGUAGES_QUERY);
+        });
     }
 
     async createUsersTable(client: PoolClient): Promise<void> {
@@ -75,6 +80,8 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                 username: row.username,
                 firstName: row.first_name,
                 lastName: row.last_name,
+                phoneNumber: row.phone_number,
+                languages: row.languages,
                 imageUrl: row.image_url,
                 passwordEnabled: row.password_enabled,
                 twoFactorEnabled: row.two_factor_enabled,
@@ -133,6 +140,8 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                 username: row.username,
                 firstName: row.first_name,
                 lastName: row.last_name,
+                phoneNumber: row.phone_number,
+                languages: row.languages,
                 imageUrl: row.image_url,
                 passwordEnabled: row.password_enabled,
                 twoFactorEnabled: row.two_factor_enabled,
@@ -184,6 +193,8 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             username: result.rows[0].username,
             firstName: result.rows[0].first_name,
             lastName: result.rows[0].last_name,
+            phoneNumber: result.rows[0].phone_number,
+            languages: result.rows[0].languages,
             imageUrl: result.rows[0].image_url,
             passwordEnabled: result.rows[0].password_enabled,
             twoFactorEnabled: result.rows[0].two_factor_enabled,
@@ -253,6 +264,8 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             const firstNames: (string | null)[] = [];
             const lastNames: (string | null)[] = [];
             const imageUrls: string[] = [];
+            const phoneNumbers: (string | null)[] = [];
+            const languagesJson: string[] = [];
             const passwordEnabled: boolean[] = [];
             const twoFactorEnabled: boolean[] = [];
             const backupCodeEnabled: boolean[] = [];
@@ -280,6 +293,8 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                 firstNames.push(user.firstName);
                 lastNames.push(user.lastName);
                 imageUrls.push(user.imageUrl);
+                phoneNumbers.push(user.phoneNumber ?? null);
+                languagesJson.push(JSON.stringify(user.languages ?? [])); // push JSON string per user
                 passwordEnabled.push(user.passwordEnabled);
                 twoFactorEnabled.push(user.twoFactorEnabled);
                 backupCodeEnabled.push(user.backupCodeEnabled);
@@ -311,6 +326,8 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                     firstNames,
                     lastNames,
                     imageUrls,
+                    phoneNumbers,
+                    languagesJson,
                     passwordEnabled,
                     twoFactorEnabled,
                     backupCodeEnabled,
@@ -343,6 +360,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             await this.queryWithClient(client, 'COMMIT');
         } catch (error) {
             await this.queryWithClient(client,'ROLLBACK');
+            console.log("error", error);
             throw error;
         } finally {
             client.release();

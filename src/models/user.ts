@@ -8,6 +8,8 @@ interface User {
   lastName: string | null;
   imageUrl: string;
   emailAddresses: EmailAddress[];
+  phoneNumber: string | null;
+  languages: string[];
   address?: Address;
   passwordEnabled: boolean;
   twoFactorEnabled: boolean;
