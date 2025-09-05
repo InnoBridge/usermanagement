@@ -360,7 +360,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             await this.queryWithClient(client, 'COMMIT');
         } catch (error) {
             await this.queryWithClient(client,'ROLLBACK');
-            console.log("error", error);
+            console.error("Error occurred during upsert operation:", error);
             throw error;
         } finally {
             client.release();
