@@ -30,7 +30,7 @@ const getUserList = async (limit: number, offset: number, updatedAfter?: number)
         queryParams = { ...queryParams, orderBy: '-updated_at' };
     }
     const result = await client.users.getUserList(queryParams);
- 
+    console.log("result ", result.data);
     const users: User[] = [];
     for (const userData of result.data) {
         if (updatedAfter!==undefined && userData.updatedAt <= updatedAfter) {
@@ -52,6 +52,8 @@ const getUserList = async (limit: number, offset: number, updatedAfter?: number)
             firstName: userData.firstName || null,
             lastName: userData.lastName || null,
             imageUrl: userData.imageUrl || '',
+            phoneNumber: '',
+            languages: [],
             emailAddresses: emailAddresses,
             passwordEnabled: userData.passwordEnabled || false,
             twoFactorEnabled: userData.twoFactorEnabled || false,

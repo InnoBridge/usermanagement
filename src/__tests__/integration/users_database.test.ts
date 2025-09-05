@@ -4,7 +4,6 @@ import { PostgresConfiguration } from '@/models/configuration';
 import { UserDatabaseClient } from '@/storage/user_database_client';
 import { UserPostgresClient } from '@/storage/user_postgres_client';
 import { User } from '@/models/user';
-import { user } from '@/index';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -38,6 +37,8 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
             emailAddresses: [
                 { id: 'email_1', emailAddress: 'john@example.com' }
             ],
+            phoneNumber: '+15550000001',
+            languages: ['english'],
             passwordEnabled: true,
             twoFactorEnabled: false,
             backupCodeEnabled: false,
@@ -53,6 +54,8 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
             emailAddresses: [
                 { id: 'email_2', emailAddress: 'jane@example.com' }
             ],
+            phoneNumber: '+15550000002',
+            languages: ['english','swedish'],
             passwordEnabled: true,
             twoFactorEnabled: true,
             backupCodeEnabled: true,
@@ -69,6 +72,8 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
                 { id: 'email_3', emailAddress: 'bob@example.com' },
                 { id: 'email_4', emailAddress: 'bob.work@example.com' }
             ],
+            phoneNumber: null,
+            languages: [],
             passwordEnabled: false,
             twoFactorEnabled: false,
             backupCodeEnabled: false,
@@ -84,6 +89,8 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
             emailAddresses: [
                 { id: 'email_5', emailAddress: 'alice@example.com' }
             ],
+            phoneNumber: '+15550000004',
+            languages: ['mandarin'],
             passwordEnabled: true,
             twoFactorEnabled: true,
             backupCodeEnabled: false,
@@ -100,6 +107,8 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
                 { id: 'email_6', emailAddress: 'charlie@example.com' },
                 { id: 'email_7', emailAddress: 'charlie.personal@gmail.com' }
             ],
+            phoneNumber: '+15550000005',
+            languages: ['english','mandarin'],
             passwordEnabled: false,
             twoFactorEnabled: false,
             backupCodeEnabled: true,
@@ -147,7 +156,7 @@ const deleteUserByIdTest = async (client: UserDatabaseClient) => {
     const userId = 'user_1';
     const usersBeforeDelete = await client.getUsers();
     const emailAddressesBeforeDelete = 
-        await client.getEmailAddressesByUserIds(usersBeforeDelete.map(user => user.id));
+    await client.getEmailAddressesByUserIds(usersBeforeDelete.map(user => user.id));
     console.log('Users before deletion: ', JSON.stringify(usersBeforeDelete, null, 2));
     console.log('Email Addresses before deletion: ', emailAddressesBeforeDelete);
     await client.deleteUserById(userId);
