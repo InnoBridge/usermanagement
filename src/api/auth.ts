@@ -30,7 +30,6 @@ const getUserList = async (limit: number, offset: number, updatedAfter?: number)
         queryParams = { ...queryParams, orderBy: '-updated_at' };
     }
     const result = await client.users.getUserList(queryParams);
-    console.log("result ", result.data);
     const users: User[] = [];
     for (const userData of result.data) {
         if (updatedAfter!==undefined && userData.updatedAt <= updatedAfter) {
