@@ -1,6 +1,6 @@
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
-import { Address } from '@/models/address';
+import { address } from '@innobridge/shared';
 import { BaseDatabaseClient } from '@/storage/base_database_client';
 
 interface UserDatabaseClient extends BaseDatabaseClient {
@@ -10,7 +10,7 @@ interface UserDatabaseClient extends BaseDatabaseClient {
     getUsersByIds(userIds: string[]): Promise<User[]>;
     getUserByUsername(username: string): Promise<User | null>;
     getEmailAddressesByUserIds(userIds: string[]): Promise<EmailAddress[]>;
-    getAddressesByUserIds(userIds: string[]): Promise<Address[]>;
+    getAddressesByUserIds(userIds: string[]): Promise<address.Address[]>;
     getLatestUserUpdate(): Promise<Date>;
     upsertUsers(user: User[]): Promise<void>;
     deleteUserById(userId: string): Promise<void>;

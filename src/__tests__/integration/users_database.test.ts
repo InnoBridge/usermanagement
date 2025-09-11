@@ -43,7 +43,19 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
             twoFactorEnabled: false,
             backupCodeEnabled: false,
             createdAt: 1748655000000,
-            updatedAt: 1748655000000  // Most recent
+            updatedAt: 1748655000000,  // Most recent
+            address: {
+                id: 'addr_user_1',
+                userId: 'user_1',
+                placeId: 'ChIJNeRxp0p1hlQR5Fornk9YLEk',
+                name: '8400 Cook Rd',
+                unitNumber: 'Unit 101',
+                city: 'Richmond',
+                province: 'British Columbia',
+                country: 'CA',
+                postalCode: 'V6Y 1V5',
+                location: { lat: 49.166331, lng: -123.1306886 }
+            }
         },
         {
             id: 'user_2',
@@ -60,7 +72,19 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
             twoFactorEnabled: true,
             backupCodeEnabled: true,
             createdAt: 1748654000000,
-            updatedAt: 1748654000000
+            updatedAt: 1748654000000,
+            address: {
+                id: 'addr_user_2',
+                userId: 'user_2',
+                placeId: 'ChIJi6C1MxquhlQRm9V4KJ6aVAs',
+                name: '123 Main St',
+                unitNumber: undefined,
+                city: 'Vancouver',
+                province: 'British Columbia',
+                country: 'CA',
+                postalCode: 'V5K 0A1',
+                location: { lat: 49.2827, lng: -123.1207 }
+            }
         },
         {
             id: 'user_3',
@@ -78,7 +102,8 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
             twoFactorEnabled: false,
             backupCodeEnabled: false,
             createdAt: 1748653000000,
-            updatedAt: 1748653000000
+            updatedAt: 1748653000000,
+            address: null
         },
         {
             id: 'user_4',
@@ -95,7 +120,19 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
             twoFactorEnabled: true,
             backupCodeEnabled: false,
             createdAt: 1748652000000,
-            updatedAt: 1748652000000
+            updatedAt: 1748652000000,
+            address: {
+                id: 'addr_user_4',
+                userId: 'user_4',
+                placeId: null,
+                name: '500 Market St',
+                unitNumber: 'Suite 20',
+                city: 'Toronto',
+                province: 'Ontario',
+                country: 'CA',
+                postalCode: 'M5V 2T6',
+                location: { lat: 43.6532, lng: -79.3832 }
+            }
         },
         {
             id: 'user_5',
@@ -113,7 +150,19 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
             twoFactorEnabled: false,
             backupCodeEnabled: true,
             createdAt: 1748651000000,
-            updatedAt: 1748651000000  // Oldest
+            updatedAt: 1748651000000,  // Oldest
+            address: {
+                id: 'addr_user_5',
+                userId: 'user_5',
+                placeId: 'ChIJd8BlQ2BZwokRAFUEcm_qrcA',
+                name: '742 Evergreen Terrace',
+                unitNumber: undefined,
+                city: 'Springfield',
+                province: 'State',
+                country: 'US',
+                postalCode: '12345',
+                location: { lat: 37.7749, lng: -122.4194 }
+            }
         }
     ] as User[];
     await client.upsertUsers(users);

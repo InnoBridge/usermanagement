@@ -110,15 +110,15 @@ const deleteUserByIdTest = async (userId: string) => {
         // clearUsersTest();
         // syncUsersTest();
 
-        // const users = await getUsersTest();
-        // console.log('Users: ', JSON.stringify(users, null, 2));
+        const users = await getUsersTest();
+        console.log('Users: ', JSON.stringify(users, null, 2));
 
-        // const userIds = users.map(user => user.id);
-        // await getUsersByIdsTest(userIds);
-        // await getUserByIdTest(userIds[0]);
-        // await getUserByUsernameTest(users[0].username!);
-        // await getEmailAddressesByUserIdsTest(userIds);
-        // await getAddressesByUserIdsTest(userIds);
+        const userIds = users.map(user => user.id);
+        await getUsersByIdsTest(userIds);
+        await getUserByIdTest(userIds[0]);
+        await getUserByUsernameTest(users[0].username!);
+        await getEmailAddressesByUserIdsTest(userIds);
+        await getAddressesByUserIdsTest(userIds);
 
         // promise tests in order
         console.log("🎉 All integration tests passed");
