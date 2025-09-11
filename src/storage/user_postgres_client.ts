@@ -18,7 +18,8 @@ import {
     CREATE_USERS_USERNAME_INDEX,
     CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
     CREATE_EMAIL_ADDRESSES_EMAIL_INDEX,
-    CREATE_ADDRESSES_USER_ID_INDEX
+    CREATE_ADDRESSES_USER_ID_INDEX,
+    CREATE_ADDRESSES_PLACE_ID_INDEX
 } from '@/storage/queries';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
@@ -44,6 +45,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         this.registerMigration(2, async (client) => {
             await this.createAddressesTable(client);
             await this.queryWithClient(client, CREATE_ADDRESSES_USER_ID_INDEX);
+            await this.queryWithClient(client, CREATE_ADDRESSES_PLACE_ID_INDEX);
         });
 
         this.registerMigration(3, async (client) => {

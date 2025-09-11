@@ -34,16 +34,19 @@ const CREATE_EMAIL_ADDRESSES_TABLE_QUERY =
 
 
 const CREATE_ADDRESSES_TABLE_QUERY =
-`CREATE TABLE IF NOT EXISTS addresses (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    line1 TEXT NOT NULL,
-    line2 TEXT,
-    city VARCHAR(255) NOT NULL,
-    province VARCHAR(255),
-    postal_code VARCHAR(64),
-    country VARCHAR(64) NOT NULL
-)`;
+    `CREATE TABLE IF NOT EXISTS addresses (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        place_id TEXT,                 -- google place_id (optional)
+        name TEXT,                     -- use for display (place name / main text)
+        unit_number TEXT,              -- subpremise / unit
+        city VARCHAR(255) NOT NULL,
+        province VARCHAR(255),         -- store full name or code (decide convention)
+        postal_code VARCHAR(64),
+        country VARCHAR(64) NOT NULL,  -- ISO alpha-2 recommended
+        lat DOUBLE PRECISION,
+        lng DOUBLE PRECISION
+    )`;
 
 const CREATE_USERS_USERNAME_INDEX = 
     `CREATE INDEX IF NOT EXISTS idx_users_username ON users(username) WHERE username IS NOT NULL`;
@@ -56,6 +59,9 @@ const CREATE_EMAIL_ADDRESSES_EMAIL_INDEX =
 
 const CREATE_ADDRESSES_USER_ID_INDEX =
     `CREATE UNIQUE INDEX IF NOT EXISTS uq_addresses_user_id ON addresses(user_id)`;
+
+const CREATE_ADDRESSES_PLACE_ID_INDEX =
+    `CREATE INDEX IF NOT EXISTS idx_addresses_place_id ON addresses(place_id) WHERE place_id IS NOT NULL`;
 
 const MIGRATE_ADD_PHONE_AND_LANGUAGES_QUERY = `
     ALTER TABLE users
@@ -98,11 +104,11 @@ const GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY =
      WHERE user_id = ANY($1)
      ORDER BY user_id`;
 
-const GET_ADDRESSES_BY_USER_IDS_QUERY = 
-    `SELECT id, user_id, line1, line2, city, province, postal_code, country
-     FROM addresses
-     WHERE user_id = ANY($1)
-     ORDER BY user_id`;
+const GET_ADDRESSES_BY_USER_IDS_QUERY = `
+    SELECT id, user_id, place_id, name, unit_number, city, province, postal_code, country, lat, lng
+    FROM addresses
+    WHERE user_id = ANY($1)
+    ORDER BY user_id`;
 
 const GET_LATEST_USER_UPDATE_QUERY = 
     `SELECT MAX(updated_at) as latest_update FROM users`;
@@ -161,34 +167,34 @@ const UPSERT_EMAIL_ADDRESSES_QUERY =
         user_id = EXCLUDED.user_id,
         email_address = EXCLUDED.email_address`;
 
-const UPSERT_ADDRESS_QUERY =
-    `INSERT INTO addresses (id, user_id, line1, line2, city, province, postal_code, country)
-     SELECT 
-        id,
-        user_id,
-        line1,
-        line2,
-        city,
-        province,
-        postal_code,
-        country
-     FROM 
-        (SELECT UNNEST($1::text[]) as id,
-                UNNEST($2::text[]) as user_id,
-                UNNEST($3::text[]) as line1,
-                UNNEST($4::text[]) as line2,
-                UNNEST($5::varchar[]) as city,
-                UNNEST($6::varchar[]) as province,
-                UNNEST($7::varchar[]) as postal_code,
-                UNNEST($8::varchar[]) as country)
-     ON CONFLICT (user_id) 
-     DO UPDATE SET 
-        line1 = EXCLUDED.line1,
-        line2 = EXCLUDED.line2,
-        city = EXCLUDED.city,
-        province = EXCLUDED.province,
-        postal_code = EXCLUDED.postal_code,
-        country = EXCLUDED.country`;
+const UPSERT_ADDRESS_QUERY = `
+    INSERT INTO addresses (id, user_id, place_id, name, unit_number, city, province, postal_code, country, lat, lng)
+    SELECT
+    id, user_id, place_id, name, unit_number, city, province, postal_code, country, lat, lng
+    FROM (
+    SELECT UNNEST($1::text[])   AS id,
+            UNNEST($2::text[])   AS user_id,
+            UNNEST($3::text[])   AS place_id,
+            UNNEST($4::text[])   AS name,
+            UNNEST($5::text[])   AS unit_number,
+            UNNEST($6::varchar[]) AS city,
+            UNNEST($7::varchar[]) AS province,
+            UNNEST($8::varchar[]) AS postal_code,
+            UNNEST($9::varchar[]) AS country,
+            UNNEST($10::double precision[]) AS lat,
+            UNNEST($11::double precision[]) AS lng
+    ) AS t
+    ON CONFLICT (user_id) DO UPDATE
+    SET
+    place_id = EXCLUDED.place_id,
+    name = EXCLUDED.name,
+    unit_number = EXCLUDED.unit_number,
+    city = EXCLUDED.city,
+    province = EXCLUDED.province,
+    postal_code = EXCLUDED.postal_code,
+    country = EXCLUDED.country,
+    lat = EXCLUDED.lat,
+    lng = EXCLUDED.lng`;
 
 const DELETE_USERS_BY_IDS_QUERY = 
     `DELETE FROM users WHERE id = ANY($1)`;
@@ -327,6 +333,7 @@ export {
     CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
     CREATE_EMAIL_ADDRESSES_EMAIL_INDEX,
     CREATE_ADDRESSES_USER_ID_INDEX,
+    CREATE_ADDRESSES_PLACE_ID_INDEX,
     MIGRATE_ADD_PHONE_AND_LANGUAGES_QUERY,
     COUNT_USERS_QUERY,
     GET_USERS_QUERY,

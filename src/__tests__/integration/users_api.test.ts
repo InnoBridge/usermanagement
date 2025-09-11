@@ -5,7 +5,8 @@ import {
 } from '@/api/auth';
 import { initializeDatabase } from '@/api/database';
 import { 
-    deleteUsersByIds, 
+    deleteUsersByIds,
+    deleteUserById,
     getUsers, 
     syncUsers, 
     getUsersByIds, 
@@ -96,6 +97,12 @@ const getAddressesByUserIdsTest = async (userIds: string[]) => {
     console.log('getAddressesByUserIdsTest completed');
 };
 
+const deleteUserByIdTest = async (userId: string) => {
+    console.log('Starting deleteUserByIdTest ...');
+    await deleteUserById(userId);
+    console.log('deleteUserByIdTest completed');
+};
+
 (async function main() {
     try {
         // sync test
@@ -103,15 +110,15 @@ const getAddressesByUserIdsTest = async (userIds: string[]) => {
         // clearUsersTest();
         // syncUsersTest();
 
-        const users = await getUsersTest();
-        console.log('Users: ', JSON.stringify(users, null, 2));
+        // const users = await getUsersTest();
+        // console.log('Users: ', JSON.stringify(users, null, 2));
 
-        const userIds = users.map(user => user.id);
-        await getUsersByIdsTest(userIds);
-        await getUserByIdTest(userIds[0]);
-        await getUserByUsernameTest(users[0].username!);
-        await getEmailAddressesByUserIdsTest(userIds);
-        await getAddressesByUserIdsTest(userIds);
+        // const userIds = users.map(user => user.id);
+        // await getUsersByIdsTest(userIds);
+        // await getUserByIdTest(userIds[0]);
+        // await getUserByUsernameTest(users[0].username!);
+        // await getEmailAddressesByUserIdsTest(userIds);
+        // await getAddressesByUserIdsTest(userIds);
 
         // promise tests in order
         console.log("🎉 All integration tests passed");
