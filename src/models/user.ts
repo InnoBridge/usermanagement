@@ -1,5 +1,5 @@
 import { EmailAddress } from "@/models/email";
-import { Address } from "./address";
+import { address } from "@innobridge/shared";
 
 interface User {
   id: string;
@@ -10,7 +10,7 @@ interface User {
   emailAddresses: EmailAddress[];
   phoneNumber: string | null;
   languages: string[];
-  address?: Address;
+  address?: address.Address;
   passwordEnabled: boolean;
   twoFactorEnabled: boolean;
   backupCodeEnabled: boolean;

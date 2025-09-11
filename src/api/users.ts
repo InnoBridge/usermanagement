@@ -2,7 +2,7 @@ import { getUserList } from '@/api/auth';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
 import { isDatabaseClientSet, getDatabaseClient } from '@/api/database';
-import { Address } from '@/models/address';
+import { address } from '@innobridge/shared';
 
 const getUsers = async (updatedAfter?: number, limit?: number, page?: number): Promise<User[]> => {
     if (!isDatabaseClientSet()) {
@@ -39,7 +39,7 @@ const getEmailAddressesByUserIds = async (userIds: string[]): Promise<EmailAddre
     return await getDatabaseClient()!.getEmailAddressesByUserIds(userIds);
 };
 
-const getAddressesByUserIds = async (userIds: string[]): Promise<Address[]> => {
+const getAddressesByUserIds = async (userIds: string[]): Promise<address.Address[]> => {
     if (!isDatabaseClientSet()) {
         throw new Error("Database client not initialized. Call initializeDatabase first.");
     }

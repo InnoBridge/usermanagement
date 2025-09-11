@@ -18,11 +18,12 @@ import {
     CREATE_USERS_USERNAME_INDEX,
     CREATE_EMAIL_ADDRESSES_USER_ID_INDEX,
     CREATE_EMAIL_ADDRESSES_EMAIL_INDEX,
-    CREATE_ADDRESSES_USER_ID_INDEX
+    CREATE_ADDRESSES_USER_ID_INDEX,
+    CREATE_ADDRESSES_PLACE_ID_INDEX
 } from '@/storage/queries';
 import { User } from '@/models/user';
 import { EmailAddress } from '@/models/email';
-import { Address } from '@/models/address';
+import { address } from '@innobridge/shared';
 import { BasePostgresClient } from '@/storage/base_postgres_client';
 import { UserDatabaseClient } from '@/storage/user_database_client';
 import { PostgresConfiguration } from '@/models/configuration';
@@ -44,6 +45,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         this.registerMigration(2, async (client) => {
             await this.createAddressesTable(client);
             await this.queryWithClient(client, CREATE_ADDRESSES_USER_ID_INDEX);
+            await this.queryWithClient(client, CREATE_ADDRESSES_PLACE_ID_INDEX);
         });
 
         this.registerMigration(3, async (client) => {
@@ -109,7 +111,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
 
         // Fetch addresses for the users
         const addresses = await this.getAddressesByUserIds(userIds);
-        const userIdToAddresses: Map<string, Address> = new Map();
+        const userIdToAddresses: Map<string, address.Address> = new Map();
         for (const address of addresses) {
             userIdToAddresses.set(address.userId!, address);
         }
@@ -169,7 +171,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
 
         // Fetch addresses for users
         const addresses = await this.getAddressesByUserIds(userIds);
-        const userIdToAddresses: Map<string, Address> = new Map();
+        const userIdToAddresses: Map<string, address.Address> = new Map();
         for (const address of addresses) {
             userIdToAddresses.set(address.userId!, address);
         }
@@ -224,12 +226,12 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         return emailAddresses;
     };
 
-    async getAddressesByUserIds(userIds: string[]): Promise<Address[]> {
+    async getAddressesByUserIds(userIds: string[]): Promise<address.Address[]> {
         if (userIds.length === 0) {
             return [];
         }
         const result = await this.query(GET_ADDRESSES_BY_USER_IDS_QUERY, [userIds]);
-        const addresses: Address[] = [];
+        const addresses: address.Address[] = [];
         result.rows.forEach(row => {
             addresses.push(mapToAddress(row));
         });
@@ -280,12 +282,15 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             // Prepare address data arrays
             const addressIds: string[] = [];
             const addressUserIds: string[] = [];
-            const addressLine1: string[] = [];
-            const addressLine2: (string | null)[] = [];
-            const addressCity: string[] = [];
+            const placeIds: string[] = [];
+            const addressName: (string | null)[] = [];
+            const addressUnitNumber: (string | null)[] = [];
+            const addressCity: (string | null)[] = [];
             const addressProvince: (string | null)[] = [];
             const addressPostalCode: (string | null)[] = [];
-            const addressCountry: string[] = [];
+            const addressCountry: (string | null)[] = [];
+            const addressLat: (number | null)[] = [];
+            const addressLng: (number | null)[] = [];
 
             for (const user of users) {
                 userIds.push(user.id);
@@ -309,13 +314,16 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
 
                 if (user.address) {
                     addressIds.push(user.address.id);
-                    addressUserIds.push(user.id);
-                    addressLine1.push(user.address.line1);
-                    addressLine2.push(user.address.line2 || null);
-                    addressCity.push(user.address.city);
+                    addressUserIds.push(user.address.userId);
+                    placeIds.push(user.address.placeId);
+                    addressName.push(user.address.name || null);
+                    addressUnitNumber.push(user.address.unitNumber || null);
+                    addressCity.push(user.address.city || null);
                     addressProvince.push(user.address.province || null);
+                    addressCountry.push(user.address.country || null);
                     addressPostalCode.push(user.address.postalCode || null);
-                    addressCountry.push(user.address.country);
+                    addressLat.push(user.address.location ? user.address.location.lat : null);
+                    addressLng.push(user.address.location ? user.address.location.lng : null);
                 }
             }
 
@@ -348,12 +356,15 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
                 await this.queryWithClient(client, UPSERT_ADDRESS_QUERY, [
                     addressIds,
                     addressUserIds,
-                    addressLine1,
-                    addressLine2,
+                    placeIds,
+                    addressName,
+                    addressUnitNumber,
                     addressCity,
                     addressProvince,
                     addressPostalCode,
-                    addressCountry
+                    addressCountry,
+                    addressLat,
+                    addressLng
                 ]);
             }
 
@@ -387,16 +398,20 @@ const mapToEmailAddress = (row: any): EmailAddress => {
     };
 };
 
-const mapToAddress = (row: any): Address => {
+const mapToAddress = (row: any): address.Address => {
     return {
         id: row.id,
         userId: row.user_id,
-        line1: row.line1,
-        line2: row.line2,
+        placeId: row.place_id,
+        unitNumber: row.unit_number,
         city: row.city,
         province: row.province,
         postalCode: row.postal_code,
-        country: row.country
+        country: row.country,
+        location: {
+            lat: row.lat,
+            lng: row.lng
+        }
     };
 };
 

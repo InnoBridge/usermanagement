@@ -10,6 +10,7 @@
     "baseUrl": ".",
     "paths": {
           "@/*": ["src/*"],
+          "@innobridge/shared": ["./node_modules/@innobridge/shared/dist/index"],
     }
   },
   "include": ["src/**/*", "tsup.config.ts", "vitest.config.ts"]

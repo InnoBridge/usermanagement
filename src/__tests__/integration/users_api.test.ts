@@ -5,7 +5,8 @@ import {
 } from '@/api/auth';
 import { initializeDatabase } from '@/api/database';
 import { 
-    deleteUsersByIds, 
+    deleteUsersByIds,
+    deleteUserById,
     getUsers, 
     syncUsers, 
     getUsersByIds, 
@@ -94,6 +95,12 @@ const getAddressesByUserIdsTest = async (userIds: string[]) => {
     const addresses = await getAddressesByUserIds(userIds);
     console.log('Addresses by User IDs: ', JSON.stringify(addresses, null, 2));
     console.log('getAddressesByUserIdsTest completed');
+};
+
+const deleteUserByIdTest = async (userId: string) => {
+    console.log('Starting deleteUserByIdTest ...');
+    await deleteUserById(userId);
+    console.log('deleteUserByIdTest completed');
 };
 
 (async function main() {
