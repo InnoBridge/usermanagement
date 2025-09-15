@@ -21,9 +21,7 @@ import {
     CREATE_ADDRESSES_USER_ID_INDEX,
     CREATE_ADDRESSES_PLACE_ID_INDEX
 } from '@/storage/queries';
-import { User } from '@/models/user';
-import { EmailAddress } from '@/models/email';
-import { address } from '@innobridge/shared';
+import { user, email, address } from '@innobridge/shared';
 import { BasePostgresClient } from '@/storage/base_postgres_client';
 import { UserDatabaseClient } from '@/storage/user_database_client';
 import { PostgresConfiguration } from '@/models/configuration';
@@ -70,14 +68,14 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         return parseInt(result.rows[0].total, 10);
     };
 
-    async getUsers(updatedAfter?: number, limit: number = 20, page: number=0): Promise<User[]> {
+    async getUsers(updatedAfter?: number, limit: number = 20, page: number=0): Promise<user.User[]> {
         const offset = page * limit;
         const result = await this.query(GET_USERS_QUERY, [updatedAfter, limit, offset]);
 
-        const users: User[] = [];
+        const users: user.User[] = [];
         const userIds: string[] = [];
         for (const row of result.rows) {
-            const user: User = {
+            const user: user.User = {
                 id: row.id,
                 username: row.username,
                 firstName: row.first_name,
@@ -101,7 +99,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
 
         // Fetch email addresses for the users
         const emailAddresses = await this.getEmailAddressesByUserIds(userIds);
-        const userIdToEmails: Map<string, EmailAddress[]> = new Map();
+        const userIdToEmails: Map<string, email.EmailAddress[]> = new Map();
         for (const email of emailAddresses) {
             if (!userIdToEmails.has(email.userId!)) {
                 userIdToEmails.set(email.userId!, []);
@@ -125,19 +123,19 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         return users;
     }
 
-    async getUserById(userId: string): Promise<User | null> {
+    async getUserById(userId: string): Promise<user.User | null> {
         const users = await this.getUsersByIds([userId]);
         return users.length > 0 ? users[0] : null; 
     };
 
-    async getUsersByIds(userIds: string[]): Promise<User[]> {
+    async getUsersByIds(userIds: string[]): Promise<user.User[]> {
         if (userIds.length === 0) {
             return [];
         }
         const result = await this.query(GET_USERS_BY_IDS_QUERY, [userIds]);
-        const users: User[] = [];
+        const users: user.User[] = [];
         for (const row of result.rows) {
-            const user: User = {
+            const user: user.User = {
                 id: row.id,
                 username: row.username,
                 firstName: row.first_name,
@@ -161,7 +159,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
 
         // Fetch email addresses for the users
         const emailAddresses = await this.getEmailAddressesByUserIds(userIds);
-        const userIdToEmails: Map<string, EmailAddress[]> = new Map();
+        const userIdToEmails: Map<string, email.EmailAddress[]> = new Map();
         for (const email of emailAddresses) {
             if (!userIdToEmails.has(email.userId!)) {
                 userIdToEmails.set(email.userId!, []);
@@ -185,12 +183,12 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         return users;
     };
 
-    async getUserByUsername(username: string): Promise<User | null> {
+    async getUserByUsername(username: string): Promise<user.User | null> {
         const result = await this.query(GET_USER_BY_USERNAME_QUERY, [username]);
         if (result.rows.length === 0) {
             return null;
         }
-        const user: User = {
+        const user: user.User = {
             id: result.rows[0].id,
             username: result.rows[0].username,
             firstName: result.rows[0].first_name,
@@ -214,12 +212,12 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         return user;
     }
 
-    async getEmailAddressesByUserIds(userIds: string[]): Promise<EmailAddress[]> {
+    async getEmailAddressesByUserIds(userIds: string[]): Promise<email.EmailAddress[]> {
         if (userIds.length === 0) {
             return [];
         }
         const result = await this.query(GET_EMAIL_ADDRESSES_BY_USER_IDS_QUERY, [userIds]);
-        const emailAddresses: EmailAddress[] = [];
+        const emailAddresses: email.EmailAddress[] = [];
         result.rows.forEach(row => {
             emailAddresses.push(mapToEmailAddress(row));
         });
@@ -251,7 +249,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         }
     }
 
-    async upsertUsers(users: User[]): Promise<void> {
+    async upsertUsers(users: user.User[]): Promise<void> {
         if (users.length === 0) {
             return;
         }
@@ -265,7 +263,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
             const usernames: (string | null)[] = [];
             const firstNames: (string | null)[] = [];
             const lastNames: (string | null)[] = [];
-            const imageUrls: string[] = [];
+            const imageUrls: (string | null)[] = [];
             const phoneNumbers: (string | null)[] = [];
             const languagesJson: string[] = [];
             const passwordEnabled: boolean[] = [];
@@ -390,7 +388,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
     };
 };
 
-const mapToEmailAddress = (row: any): EmailAddress => {
+const mapToEmailAddress = (row: any): email.EmailAddress => {
     return {
         id: row.id,
         userId: row.user_id,

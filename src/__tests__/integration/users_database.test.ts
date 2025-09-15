@@ -3,7 +3,7 @@ import path from 'path';
 import { PostgresConfiguration } from '@/models/configuration';
 import { UserDatabaseClient } from '@/storage/user_database_client';
 import { UserPostgresClient } from '@/storage/user_postgres_client';
-import { User } from '@/models/user';
+import { user } from '@innobridge/shared';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -164,7 +164,7 @@ const upsertUsersTest = async (client: UserDatabaseClient) => {
                 location: { lat: 37.7749, lng: -122.4194 }
             }
         }
-    ] as User[];
+    ] as user.User[];
     await client.upsertUsers(users);
     console.log('Users upserted successfully');
 };
