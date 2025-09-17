@@ -1,9 +1,7 @@
-// Add to your queries.ts file:
-
 const CREATE_PROVIDERS_TABLE_QUERY = 
     `CREATE TABLE IF NOT EXISTS providers (
         id TEXT PRIMARY KEY,
-        username VARCHAR(255) UNIQUE,
+        providername VARCHAR(255) UNIQUE,
         first_name VARCHAR(255),
         last_name VARCHAR(255),
         image_url TEXT NOT NULL,
@@ -25,7 +23,7 @@ const CREATE_PROVIDERS_TABLE_QUERY =
 const CREATE_PROVIDER_EMAIL_ADDRESSES_TABLE_QUERY = 
     `CREATE TABLE IF NOT EXISTS provider_email_addresses (
         id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id TEXT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
         email_address VARCHAR(255) NOT NULL UNIQUE
     )`;
 
@@ -33,7 +31,7 @@ const CREATE_PROVIDER_EMAIL_ADDRESSES_TABLE_QUERY =
 const CREATE_PROVIDER_ADDRESSES_TABLE_QUERY =
     `CREATE TABLE IF NOT EXISTS provider_addresses (
         id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id TEXT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
         place_id TEXT,                 -- google place_id (optional)
         name TEXT,                     -- use for display (place name / main text)
         unit_number TEXT,              -- subpremise / unit
@@ -46,21 +44,20 @@ const CREATE_PROVIDER_ADDRESSES_TABLE_QUERY =
     )`;
 
 
-const CREATE_PROVIDERS_USERNAME_INDEX = 
-    `CREATE INDEX IF NOT EXISTS idx_providers_username ON providers(username) WHERE username IS NOT NULL`;
+const CREATE_PROVIDERS_PROVIDERNAME_INDEX = 
+    `CREATE INDEX IF NOT EXISTS idx_providers_providername ON providers(providername) WHERE providername IS NOT NULL`;
 
 const CREATE_PROVIDERS_BUSINESS_NAME_INDEX = 
     `CREATE INDEX IF NOT EXISTS idx_providers_business_name ON providers(business_name) WHERE business_name IS NOT NULL`;
 
-
-const CREATE_PROVIDER_EMAIL_ADDRESSES_USER_ID_INDEX = 
-    `CREATE INDEX IF NOT EXISTS idx_provider_email_addresses_user_id ON provider_email_addresses(user_id)`;
+const CREATE_PROVIDER_EMAIL_ADDRESSES_ID_INDEX = 
+    `CREATE INDEX IF NOT EXISTS idx_provider_email_addresses_id ON provider_email_addresses(id)`;
 
 const CREATE_PROVIDER_EMAIL_ADDRESSES_EMAIL_INDEX = 
     `CREATE INDEX IF NOT EXISTS idx_provider_email_addresses_email ON provider_email_addresses(email_address)`;
 
-const CREATE_PROVIDER_ADDRESSES_USER_ID_INDEX =
-    `CREATE UNIQUE INDEX IF NOT EXISTS uq_provider_addresses_user_id ON provider_addresses(user_id)`;
+const CREATE_PROVIDER_ADDRESSES_PROVIDER_ID_INDEX =
+    `CREATE UNIQUE INDEX IF NOT EXISTS uq_provider_addresses_provider_id ON provider_addresses(provider_id)`;
 
 const CREATE_PROVIDER_ADDRESSES_PLACE_ID_INDEX =
     `CREATE INDEX IF NOT EXISTS idx_provider_addresses_place_id ON provider_addresses(place_id) WHERE place_id IS NOT NULL`;
@@ -71,7 +68,7 @@ const COUNT_PROVIDERS_QUERY =
      WHERE $1::BIGINT IS NULL OR updated_at > to_timestamp($1::BIGINT/1000.0)`;
 
 const GET_PROVIDERS_QUERY =
-    `SELECT p.id, p.username, p.first_name, p.last_name, p.image_url, p.phone_number, p.languages,
+    `SELECT p.id, p.providername, p.first_name, p.last_name, p.image_url, p.phone_number, p.languages,
             p.password_enabled, p.two_factor_enabled, p.backup_code_enabled,
             p.service_radius, p.can_visit_client_home, p.virtual_help_offered, p.business_name,
             p.created_at, p.updated_at
@@ -81,7 +78,7 @@ const GET_PROVIDERS_QUERY =
      LIMIT $2 OFFSET $3`;
 
 const GET_PROVIDERS_BY_IDS_QUERY = 
-    `SELECT p.id, p.username, p.first_name, p.last_name, p.image_url, p.phone_number, p.languages,
+    `SELECT p.id, p.providername, p.first_name, p.last_name, p.image_url, p.phone_number, p.languages,
             p.service_radius, p.can_visit_client_home, p.virtual_help_offered, p.business_name,
             p.password_enabled, p.two_factor_enabled, p.backup_code_enabled,
             p.created_at, p.updated_at
@@ -89,26 +86,38 @@ const GET_PROVIDERS_BY_IDS_QUERY =
      WHERE p.id = ANY($1)
      ORDER BY p.updated_at DESC`;
 
-const GET_PROVIDER_BY_USERNAME_QUERY = 
-    `SELECT p.id, p.username, p.first_name, p.last_name, p.image_url, p.phone_number, p.languages,
+const GET_PROVIDER_BY_PROVIDERNAME_QUERY = 
+    `SELECT p.id, p.providername, p.first_name, p.last_name, p.image_url, p.phone_number, p.languages,
             p.service_radius, p.can_visit_client_home, p.virtual_help_offered, p.business_name,
             p.password_enabled, p.two_factor_enabled, p.backup_code_enabled,
             p.created_at, p.updated_at
      FROM providers p
-     WHERE p.username = $1`;
+     WHERE p.providername = $1`;
+
+const GET_PROVIDER_EMAIL_ADDRESSES_BY_PROVIDER_IDS_QUERY =
+    `SELECT id, provider_id, email_address
+     FROM provider_email_addresses
+     WHERE provider_id = ANY($1)
+     ORDER BY provider_id`;
+
+const GET_PROVIDER_ADDRESSES_BY_PROVIDER_IDS_QUERY =
+    `SELECT id, provider_id, place_id, name, unit_number, city, province, postal_code, country, lat, lng
+     FROM provider_addresses
+     WHERE provider_id = ANY($1)
+     ORDER BY provider_id`;
 
 const GET_LATEST_PROVIDER_UPDATE_QUERY = 
     `SELECT MAX(updated_at) as latest_update FROM providers`;
 
 const UPSERT_PROVIDERS_QUERY = `
 INSERT INTO providers (
-  id, username, first_name, last_name, image_url, phone_number, languages,
+  id, providername, first_name, last_name, image_url, phone_number, languages,
   password_enabled, two_factor_enabled, backup_code_enabled,
   service_radius, can_visit_client_home, virtual_help_offered, business_name,
   created_at, updated_at
 )
 SELECT
-  id, username, first_name, last_name, image_url, phone_number, languages_json::jsonb AS languages,
+  id, providername, first_name, last_name, image_url, phone_number, languages_json::jsonb AS languages,
   password_enabled, two_factor_enabled, backup_code_enabled,
   service_radius, can_visit_client_home, virtual_help_offered, business_name,
   to_timestamp(created_at::BIGINT/1000.0),
@@ -116,7 +125,7 @@ SELECT
 FROM (
   SELECT
     UNNEST($1::text[])       AS id,
-    UNNEST($2::varchar[])    AS username,
+    UNNEST($2::varchar[])    AS providername,
     UNNEST($3::varchar[])    AS first_name,
     UNNEST($4::varchar[])    AS last_name,
     UNNEST($5::text[])       AS image_url,
@@ -134,7 +143,7 @@ FROM (
 ) AS t
 ON CONFLICT (id) DO UPDATE
 SET
-  username = EXCLUDED.username,
+  providername = EXCLUDED.providername,
   first_name = EXCLUDED.first_name,
   last_name = EXCLUDED.last_name,
   image_url = EXCLUDED.image_url,
@@ -150,6 +159,50 @@ SET
   updated_at = EXCLUDED.updated_at;
 `;
 
+const UPSERT_PROVIDER_EMAIL_ADDRESSES_QUERY =
+    `INSERT INTO provider_email_addresses (id, provider_id, email_address)
+    SELECT
+        id,
+        provider_id,
+        email_address
+    FROM 
+        (SELECT UNNEST($1::text[]) AS id,
+                UNNEST($2::text[]) AS provider_id,
+                UNNEST($3::varchar[]) AS email_address)
+    ON CONFLICT (id)
+    DO UPDATE SET
+        provider_id = EXCLUDED.provider_id,
+        email_address = EXCLUDED.email_address`;
+
+const UPSERT_PROVIDER_ADDRESSES_QUERY =
+    `INSERT INTO provider_addresses (id, provider_id, place_id, name, unit_number, city, province, postal_code, country, lat, lng)
+    SELECT
+        id, provider_id, place_id, name, unit_number, city, province, postal_code, country, lat, lng
+        FROM (
+            SELECT UNNEST($1::text[]) AS id,
+                   UNNEST($2::text[]) AS provider_id,
+                   UNNEST($3::text[]) AS place_id,
+                   UNNEST($4::text[]) AS name,
+                   UNNEST($5::text[]) AS unit_number,
+                   UNNEST($6::varchar[]) AS city,
+                   UNNEST($7::varchar[]) AS province,
+                   UNNEST($8::varchar[]) AS postal_code,
+                   UNNEST($9::varchar[]) AS country,
+                   UNNEST($10::double precision[]) AS lat,
+                   UNNEST($11::double precision[]) AS lng
+        ) AS t
+    ON CONFLICT (provider_id) DO UPDATE
+    SET
+        place_id = EXCLUDED.place_id,
+        name = EXCLUDED.name,
+        unit_number = EXCLUDED.unit_number,
+        city = EXCLUDED.city,
+        province = EXCLUDED.province,
+        postal_code = EXCLUDED.postal_code,
+        country = EXCLUDED.country,
+        lat = EXCLUDED.lat,
+        lng = EXCLUDED.lng`;
+
 const DELETE_PROVIDERS_BY_IDS_QUERY = 
     `DELETE FROM providers WHERE id = ANY($1)`;
 
@@ -158,17 +211,21 @@ export {
     CREATE_PROVIDERS_TABLE_QUERY,
     CREATE_PROVIDER_EMAIL_ADDRESSES_TABLE_QUERY,
     CREATE_PROVIDER_ADDRESSES_TABLE_QUERY,
-    CREATE_PROVIDERS_USERNAME_INDEX,
+    CREATE_PROVIDERS_PROVIDERNAME_INDEX,
     CREATE_PROVIDERS_BUSINESS_NAME_INDEX,
-    CREATE_PROVIDER_EMAIL_ADDRESSES_USER_ID_INDEX,
+    CREATE_PROVIDER_EMAIL_ADDRESSES_ID_INDEX,
     CREATE_PROVIDER_EMAIL_ADDRESSES_EMAIL_INDEX,
-    CREATE_PROVIDER_ADDRESSES_USER_ID_INDEX,
+    CREATE_PROVIDER_ADDRESSES_PROVIDER_ID_INDEX,
     CREATE_PROVIDER_ADDRESSES_PLACE_ID_INDEX,
     COUNT_PROVIDERS_QUERY,
     GET_PROVIDERS_QUERY,
     GET_PROVIDERS_BY_IDS_QUERY,
-    GET_PROVIDER_BY_USERNAME_QUERY,
+    GET_PROVIDER_BY_PROVIDERNAME_QUERY,
+    GET_PROVIDER_EMAIL_ADDRESSES_BY_PROVIDER_IDS_QUERY,
+    GET_PROVIDER_ADDRESSES_BY_PROVIDER_IDS_QUERY,
     GET_LATEST_PROVIDER_UPDATE_QUERY,
     UPSERT_PROVIDERS_QUERY,
+    UPSERT_PROVIDER_EMAIL_ADDRESSES_QUERY,
+    UPSERT_PROVIDER_ADDRESSES_QUERY,
     DELETE_PROVIDERS_BY_IDS_QUERY
 };

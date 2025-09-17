@@ -247,7 +247,7 @@ class UserPostgresClient extends BasePostgresClient implements UserDatabaseClien
         } else { 
             return new Date(0);
         }
-    }
+    };
 
     async upsertUsers(users: user.User[]): Promise<void> {
         if (users.length === 0) {
@@ -402,6 +402,7 @@ const mapToAddress = (row: any): address.Address => {
         userId: row.user_id,
         placeId: row.place_id,
         unitNumber: row.unit_number,
+        name: row.name,
         city: row.city,
         province: row.province,
         postalCode: row.postal_code,
