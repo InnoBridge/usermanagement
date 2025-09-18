@@ -1,7 +1,7 @@
 import { provider, email, address } from '@innobridge/shared';
-import { BaseDatabaseClient } from '@/storage/base_database_client';
+import { ConnectionsDatabaseClient } from '@/storage/connections_database_client';
 
-interface ProviderDatabaseClient extends BaseDatabaseClient {
+interface ProviderDatabaseClient extends ConnectionsDatabaseClient {
     countProviders(updatedAfter?: number): Promise<number>;
     getProviders(updatedAfter?: number, limit?: number, page?: number): Promise<provider.Provider[]>;
     getProviderById(providerId: string): Promise<provider.Provider | null>;

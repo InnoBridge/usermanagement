@@ -1,4 +1,5 @@
 import { PoolClient } from 'pg';
+import { ConnectionsPostgresClient } from '@/storage/connections_postgres_client';
 import {
     CREATE_PROVIDERS_TABLE_QUERY,
     CREATE_PROVIDER_EMAIL_ADDRESSES_TABLE_QUERY,
@@ -22,11 +23,10 @@ import {
     DELETE_PROVIDERS_BY_IDS_QUERY
 } from '@/storage/provider_queries';
 import { provider, email, address } from '@innobridge/shared';
-import { BasePostgresClient } from '@/storage/base_postgres_client';
 import { ProviderDatabaseClient } from '@/storage/provider_database_client';
 import { PostgresConfiguration } from '@/models/configuration';
 
-class ProviderPostgresClient extends BasePostgresClient implements ProviderDatabaseClient {
+class ProviderPostgresClient extends ConnectionsPostgresClient implements ProviderDatabaseClient {
     
     constructor(config: PostgresConfiguration) {
         super(config);
