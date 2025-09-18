@@ -275,9 +275,9 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
             const passwordEnabled: boolean[] = [];
             const twoFactorEnabled: boolean[] = [];
             const backupCodeEnabled: boolean[] = [];
-            const serviceRadius: (number | null)[] = [];
-            const canVisitClientHome: (boolean | null)[] = [];
-            const virtualHelpOffered: (boolean | null)[] = [];
+            const serviceRadius: number[] = [];
+            const canVisitClientHome: boolean[] = [];
+            const virtualHelpOffered: boolean[] = [];
             const businessNames: (string | null)[] = [];
             const createdAts: number[] = [];
             const updatedAts: number[] = [];
@@ -311,9 +311,9 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
                 passwordEnabled.push(provider.passwordEnabled || false);
                 twoFactorEnabled.push(provider.twoFactorEnabled || false);
                 backupCodeEnabled.push(provider.backupCodeEnabled || false);
-                serviceRadius.push(provider.serviceRadius || null);
-                canVisitClientHome.push(provider.canVisitClientHome ?? null);
-                virtualHelpOffered.push(provider.virtualHelpOffered ?? null);
+                serviceRadius.push(provider.serviceRadius ?? 0);
+                canVisitClientHome.push(provider.canVisitClientHome ?? false);
+                virtualHelpOffered.push(provider.virtualHelpOffered ?? false);
                 businessNames.push(provider.businessName || null);
                 createdAts.push(provider.createdAt || Date.now());
                 updatedAts.push(provider.updatedAt || Date.now());
