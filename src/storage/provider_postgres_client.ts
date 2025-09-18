@@ -71,7 +71,7 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
         for (const row of result.rows) {
             const provider: provider.Provider = {
                 id: row.id,
-                providerName: row.username,
+                providerName: row.providername,
                 firstName: row.first_name,
                 lastName: row.last_name,
                 phoneNumber: row.phone_number,
@@ -135,7 +135,7 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
         for (const row of result.rows) {
             const provider: provider.Provider = {
                 id: row.id,
-                providerName: row.username,
+                providerName: row.providername,
                 firstName: row.first_name,
                 lastName: row.last_name,
                 phoneNumber: row.phone_number,
@@ -192,7 +192,7 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
         }
         const provider: provider.Provider = {
             id: result.rows[0].id,
-            providerName: result.rows[0].username,
+            providerName: result.rows[0].providername,
             firstName: result.rows[0].first_name,
             lastName: result.rows[0].last_name,
             phoneNumber: result.rows[0].phone_number,
@@ -266,7 +266,7 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
 
             // Prepare provider data arrays
             const providerIds: string[] = [];
-            const providerUsernames: (string | null)[] = [];
+            const providerNames: (string | null)[] = [];
             const firstNames: (string | null)[] = [];
             const lastNames: (string | null)[] = [];
             const imageUrls: (string | null)[] = [];
@@ -302,7 +302,7 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
 
             for (const provider of providers) {
                 providerIds.push(provider.id);
-                providerUsernames.push(provider.providerName || null);
+                providerNames.push(provider.providerName || null);
                 firstNames.push(provider.firstName || null);
                 lastNames.push(provider.lastName || null);
                 imageUrls.push(provider.imageUrl || null);
@@ -344,7 +344,7 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
             if (providerIds.length > 0) {
                 await this.queryWithClient(client, UPSERT_PROVIDERS_QUERY, [
                     providerIds,
-                    providerUsernames,
+                    providerNames,
                     firstNames,
                     lastNames,
                     imageUrls,
