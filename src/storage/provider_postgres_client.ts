@@ -59,7 +59,7 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
 
     async countProviders(updatedAfter?: number): Promise<number> {
         const result = await this.query(COUNT_PROVIDERS_QUERY, [updatedAfter]);
-        return parseInt(result.rows[0].count, 10);
+        return parseInt(result.rows[0].total, 10);
     };
 
     async getProviders(updatedAfter?: number, limit?: number, page?: number): Promise<provider.Provider[]> {
