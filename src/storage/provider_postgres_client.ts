@@ -62,8 +62,8 @@ class ProviderPostgresClient extends ConnectionsPostgresClient implements Provid
         return parseInt(result.rows[0].total, 10);
     };
 
-    async getProviders(updatedAfter?: number, limit?: number, page?: number): Promise<provider.Provider[]> {
-        const offset = page && limit ? (page - 1) * limit : undefined;
+    async getProviders(updatedAfter?: number, limit: number = 20, page: number = 0): Promise<provider.Provider[]> {
+        const offset = page * limit;
         const result = await this.query(GET_PROVIDERS_QUERY, [updatedAfter, limit, offset]);
 
         const providers: provider.Provider[] = [];
