@@ -1,15 +1,15 @@
-import { ConnectionsDatabaseClient } from '@/storage/connections_database_client';
-import { ConnectionsPostgresClient } from '@/storage/connections_postgres_client';
+import { ProviderDatabaseClient } from '@/storage/provider_database_client';
+import { ProviderPostgresClient } from '@/storage/provider_postgres_client'; 
 import { DatabaseConfiguration } from '@/models/configuration';
 import { PoolClient } from 'pg';
 
-let databaseClient: ConnectionsDatabaseClient | null = null;
+let databaseClient: ProviderDatabaseClient | null = null;
 
 const initializeDatabase = async (
     config: DatabaseConfiguration,
     registerMigrations?: Map<number, (client: PoolClient) => Promise<void>> 
 ): Promise<void> => {
-    databaseClient = new ConnectionsPostgresClient(config);
+    databaseClient = new ProviderPostgresClient(config);
     if (registerMigrations) {
         registerMigrations.forEach((migration, version) => {
             databaseClient?.registerMigration(version, migration);
@@ -22,7 +22,7 @@ const isDatabaseClientSet = (): boolean => {
     return databaseClient !== null;
 };
 
-const getDatabaseClient = (): ConnectionsDatabaseClient | null => {
+const getDatabaseClient = (): ProviderDatabaseClient | null => {
     if (!isDatabaseClientSet()) {
         throw new Error("Database client not initialized. Call initializeDatabase first.");
     }

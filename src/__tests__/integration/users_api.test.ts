@@ -16,7 +16,7 @@ import {
     getAddressesByUserIds
 } from '@/api/users';
 import { PostgresConfiguration } from '@/models/configuration';
-import { User } from '@/models/user';
+import { user } from '@innobridge/shared';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
@@ -53,7 +53,7 @@ const clearUsersTest = async () => {
     console.log('clearUsersTest completed');
 }
 
-const getUsersTest = async (): Promise<User[]> => {
+const getUsersTest = async (): Promise<user.User[]> => {
     console.log('Starting getUsersTest ...');
     const users = await getUsers();
     // console.log('Users: ', JSON.stringify(users, null, 2));

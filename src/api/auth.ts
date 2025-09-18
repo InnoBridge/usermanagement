@@ -2,8 +2,7 @@ import {
     ClerkClient, 
     createClerkClient
 } from '@clerk/backend';
-import { User } from '@/models/user';
-import { EmailAddress } from '@/models/email';
+import { user, email } from '@innobridge/shared';
 
 let client: ClerkClient | null = null;
 
@@ -18,7 +17,7 @@ const getUserCount = async () => {
     return await client.users.getCount();
 };
 
-const getUserList = async (limit: number, offset: number, updatedAfter?: number) => {
+const getUserList = async (limit: number, offset: number, updatedAfter?: number): Promise<user.User[]> => {
     if (!client) {
         throw new Error('Clerk client is not initialized. Call initializeClerkClient first.');
     }
@@ -30,12 +29,12 @@ const getUserList = async (limit: number, offset: number, updatedAfter?: number)
         queryParams = { ...queryParams, orderBy: '-updated_at' };
     }
     const result = await client.users.getUserList(queryParams);
-    const users: User[] = [];
+    const users: user.User[] = [];
     for (const userData of result.data) {
         if (updatedAfter!==undefined && userData.updatedAt <= updatedAfter) {
             break;
         }
-        const emailAddresses: EmailAddress[] = [];
+        const emailAddresses: email.EmailAddress[] = [];
         if (userData.emailAddresses.length > 0) {
             for (const email of userData.emailAddresses) {
                 emailAddresses.push({
